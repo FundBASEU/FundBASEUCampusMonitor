@@ -344,16 +344,6 @@ header p {
       <div id="mess-time" class="last-updated"></div>
     </div>
 
-    <!-- Gym Card -->
-    <div class="card" onclick="openModal('gym')">
-      <div class="card-header">
-        <span class="card-title">🏋️ Gym</span>
-        <span class="card-icon">💪</span>
-      </div>
-      <div id="gym-status" class="status not-updated">Click to update</div>
-      <div id="gym-time" class="last-updated"></div>
-    </div>
-
     <!-- Nescafe Card -->
     <div class="card" onclick="openModal('nescafe')">
       <div class="card-header">
@@ -450,90 +440,129 @@ if (!deviceId) {
 const THRESHOLD_DEFAULT = 3;
 const THRESHOLD_BADMINTON = 2;
 
-// ---------- MESS MENU ENGINE (Based on uploaded image) ----------
-const messMenu = {
+// ---------- MESS MENU ENGINE (Based on uploaded photo) ----------
+
+// Breakfast alternates based on week pattern (1+3 vs 2+4)
+const breakfastMenu = {
+  Week13: {  // Weeks 1 and 3 of month
+    Monday: "Vada + Sambar + Chutney + Shavige",
+    Tuesday: "Poha + Fruits + Chowchow Bath + Chutney",
+    Wednesday: "Plain Dosa + Aloo + Chutney + Egg",
+    Thursday: "Bisi Belle Bath + Bread Jam + Fruits",
+    Friday: "Green Moong Dosa + Oats + Chutney",
+    Saturday: "Tomato Bath + Puliyogare + Chutney",
+    Sunday: "Masala Dosa + Aloo + Chutney"
+  },
+  Week24: {  // Weeks 2 and 4 of month
+    Monday: "Millets Khichdi + Vada + Sambar + Chutney + Idly",
+    Tuesday: "Lemon Rice + Bread Jam + Fruits + Chutney",
+    Wednesday: "Ragi Dosa + Dalia + Tomato Chutney + Egg",
+    Thursday: "Onion Uthappam + Mangalore Bajji + Chutney",
+    Friday: "Dal Khichdi + Dosa + Chutney",
+    Saturday: "Pongal + Bread Jam + Fruits + Chutney",
+    Sunday: "Set Dosa + Chutney"
+  }
+};
+
+// Lunch, Snacks, Dinner from the photo
+const dailyMenu = {
   Monday: {
-    Breakfast: "Dosa + Vada + Sambar + Chutney",
     Lunch: "Chapathi + Rice + Dal + Veg + Curd",
     Snacks: "Bajji + Tea",
     Dinner: "Chapathi + Rice + Dal + Veg"
   },
   Tuesday: {
-    Breakfast: "Idly + Vada + Sambar + Chutney",
-    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd + Pickle",
     Snacks: "Biscuits + Tea",
     Dinner: "Chapathi + Rice + Dal + Veg"
   },
   Wednesday: {
-    Breakfast: "Poori + Aloo Curry + Chutney",
-    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd + Pickle + Papad",
     Snacks: "Bread Pakoda + Tea",
     Dinner: "Chapathi + Rice + Dal + Veg"
   },
   Thursday: {
-    Breakfast: "Upma + Vada + Chutney",
-    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd + Pickle",
     Snacks: "Samosa + Tea",
-    Dinner: "Chapathi + Rice + Dal + Veg"
+    Dinner: "Chapathi + Rice + Dal + Veg + Salad"
   },
   Friday: {
-    Breakfast: "Pongal + Vada + Sambar + Chutney",
-    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd + Pickle + Papad",
     Snacks: "Mixture + Tea",
     Dinner: "Chapathi + Rice + Dal + Veg"
   },
   Saturday: {
-    Breakfast: "Roti + Sabzi + Chutney",
-    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd + Pickle",
     Snacks: "Vada Pav + Tea",
-    Dinner: "Chapathi + Rice + Dal + Veg"
+    Dinner: "Chapathi + Rice + Dal + Veg + Salad"
   },
   Sunday: {
-    Breakfast: "Pesarattu + Upma + Chutney",
-    Lunch: "Special Biryani + Raita",
+    Lunch: "Special Biryani + Raita + Salad",
     Snacks: "Cutlet + Tea",
     Dinner: "Chapathi + Rice + Dal + Veg"
   }
 };
 
-function getCurrentMeal() {
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
+const mealTimes = [
+  { name: "Breakfast", start: 450, end: 600 },   // 7:30 AM - 10:00 AM
+  { name: "Lunch", start: 750, end: 900 },       // 12:30 PM - 3:00 PM
+  { name: "Snacks", start: 1020, end: 1140 },    // 5:00 PM - 7:00 PM
+  { name: "Dinner", start: 1170, end: 1320 }     // 7:30 PM - 10:00 PM
+];
 
-  if (minutes >= 450 && minutes <= 600) return "Breakfast";  // 7:30 AM - 10:00 AM
-  if (minutes >= 750 && minutes <= 900) return "Lunch";      // 12:30 PM - 3:00 PM
-  if (minutes >= 1020 && minutes <= 1140) return "Snacks";   // 5:00 PM - 7:00 PM
-  if (minutes >= 1170 && minutes <= 1320) return "Dinner";   // 7:30 PM - 10:00 PM
+const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-  // Predict next meal
-  if (minutes < 450) return "Breakfast";
-  if (minutes < 750) return "Lunch";
-  if (minutes < 1020) return "Snacks";
-  if (minutes < 1170) return "Dinner";
-  return "Breakfast"; // After 10 PM, show tomorrow's breakfast
+function getWeekPattern(date) {
+  // Get week number of the month (1-5)
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const weekOfMonth = Math.ceil((date.getDate() + firstDay.getDay()) / 7);
+  
+  // Week 1 and 3 use Week13 pattern, Week 2 and 4 use Week24 pattern
+  return (weekOfMonth === 1 || weekOfMonth === 3) ? "Week13" : "Week24";
 }
 
-function getDayOfWeek() {
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+function getNextMeal() {
   const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentDay = now.getDay();
   
-  // If after 10 PM, show next day's breakfast
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  if (minutes >= 1320) { // After 10 PM
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return days[tomorrow.getDay()];
+  // Find next meal today
+  for (let meal of mealTimes) {
+    if (currentMinutes < meal.end) {
+      return {
+        date: now,
+        day: dayNames[currentDay],
+        meal: meal.name
+      };
+    }
   }
   
-  return days[now.getDay()];
+  // If past all meals today, return tomorrow's breakfast
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDay = tomorrow.getDay();
+  
+  return {
+    date: tomorrow,
+    day: dayNames[tomorrowDay],
+    meal: "Breakfast"
+  };
+}
+
+function getMenu(date, day, meal) {
+  if (meal === "Breakfast") {
+    const weekPattern = getWeekPattern(date);
+    return breakfastMenu[weekPattern][day];
+  } else {
+    return dailyMenu[day][meal];
+  }
 }
 
 function updateMessDisplay() {
-  const meal = getCurrentMeal();
-  const day = getDayOfWeek();
-  const menu = messMenu[day][meal];
+  const nextMeal = getNextMeal();
+  const menu = getMenu(nextMeal.date, nextMeal.day, nextMeal.meal);
   
-  document.getElementById("mess-meal").innerHTML = meal;
+  document.getElementById("mess-meal").innerHTML = "Next: " + nextMeal.meal;
   document.getElementById("mess-menu").innerHTML = menu;
 }
 
@@ -546,27 +575,9 @@ function openModal(place) {
   
   if (place === 'mess') {
     html += '🍽️ Mess Status</div>';
-    const data = getData();
-    const needsConfirm = data.mess && data.mess.confirmations < 3;
-    const currentVotes = data.mess ? data.mess.confirmations : 0;
-    
-    if (needsConfirm) {
-      html += '<div class="confirmation-notice">Current votes: ' + currentVotes + '/3 - Needs ' + (3 - currentVotes) + ' more confirmation(s)</div>';
-    }
     html += '<div class="button-group">';
     html += '<button class="btn btn-available" onclick="vote(\'mess\', \'Food Available\')">Food Available</button>';
     html += '<button class="btn btn-finished" onclick="vote(\'mess\', \'Food Not Available\')">Food Not Available</button>';
-    html += '</div>';
-  }
-  else if (place === 'gym') {
-    html += '🏋️ Gym Crowd</div>';
-    html += '<div class="input-group">';
-    html += '<label>How many people are in the gym?</label>';
-    html += '</div>';
-    html += '<div class="button-group">';
-    html += '<button class="btn btn-available" onclick="updateGym(\'0-3\')">0-3 people</button>';
-    html += '<button class="btn btn-available" onclick="updateGym(\'3-5\')">3-5 people</button>';
-    html += '<button class="btn btn-available" onclick="updateGym(\'5+\')">5+ people</button>';
     html += '</div>';
   }
   else if (place === 'badminton') {
@@ -600,13 +611,6 @@ function openModal(place) {
 
 function closeModal() {
   document.getElementById("modal").classList.remove("active");
-}
-
-function getData() {
-  // Helper to track local confirmation state
-  return {
-    mess: { confirmations: 0 }
-  };
 }
 
 // ---------- VOTING ----------
@@ -671,12 +675,6 @@ function voteBadminton() {
   closeModal();
 }
 
-function updateGym(range) {
-  db.ref("gym").set({ status: range, timestamp: Date.now() });
-  alert("Gym status updated!");
-  closeModal();
-}
-
 function timeAgo(ts) {
   if (!ts) return "";
   var m = Math.floor((Date.now() - ts) / 60000);
@@ -689,7 +687,7 @@ function timeAgo(ts) {
 }
 
 // ---------- LISTENERS ----------
-['mess', 'nescafe', 'nandini', 'gym', 'badminton'].forEach(place => {
+['mess', 'nescafe', 'nandini', 'badminton'].forEach(place => {
   db.ref(place).on("value", snap => {
     var d = snap.val();
     var statusEl = document.getElementById(place + '-status');
@@ -714,13 +712,6 @@ function timeAgo(ts) {
     else if (place === 'mess') {
       if (timeEl) timeEl.innerHTML = timeAgo(d.timestamp);
     }
-    else if (place === 'gym') {
-      if (statusEl) {
-        statusEl.innerHTML = d.status + " people";
-        statusEl.className = 'status neutral';
-      }
-      if (timeEl) timeEl.innerHTML = timeAgo(d.timestamp);
-    }
     else {
       if (statusEl) {
         statusEl.innerHTML = d.status;
@@ -730,19 +721,17 @@ function timeAgo(ts) {
     }
   });
 
-  if (place !== 'gym') {
-    db.ref(place + "_votes").on("value", snap => {
-      var total = 0;
-      snap.forEach(c => total += c.val());
-      var votesEl = document.getElementById(place + '-votes');
-      if (votesEl) votesEl.innerHTML = total > 0 ? "Votes: " + total : "";
-    });
-    
-    db.ref(place + "_pending").on("value", snap => {
-      var pendingEl = document.getElementById(place + '-pending');
-      if (pendingEl) pendingEl.innerHTML = snap.val() ? snap.val().message : "";
-    });
-  }
+  db.ref(place + "_votes").on("value", snap => {
+    var total = 0;
+    snap.forEach(c => total += c.val());
+    var votesEl = document.getElementById(place + '-votes');
+    if (votesEl) votesEl.innerHTML = total > 0 ? "Votes: " + total : "";
+  });
+  
+  db.ref(place + "_pending").on("value", snap => {
+    var pendingEl = document.getElementById(place + '-pending');
+    if (pendingEl) pendingEl.innerHTML = snap.val() ? snap.val().message : "";
+  });
 });
 
 </script>
