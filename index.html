@@ -97,12 +97,12 @@
             font-size: 0.95em;
         }
 
-        .status.available, .status.open, .status.free, .status.empty {
+        .status.available, .status.open, .status.free, .status.in-cabin {
             background: #10b981;
             color: white;
         }
 
-        .status.finished, .status.closed, .status.occupied, .status.crowded {
+        .status.finished, .status.closed, .status.occupied, .status.not-in-cabin {
             background: #ef4444;
             color: white;
         }
@@ -112,18 +112,8 @@
             color: white;
         }
 
-        .status.in-class {
+        .status.neutral {
             background: #3b82f6;
-            color: white;
-        }
-
-        .status.in-meeting {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .status.out {
-            background: #6b7280;
             color: white;
         }
 
@@ -216,21 +206,6 @@
             color: white;
         }
 
-        .btn-empty {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-moderate {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .btn-crowded {
-            background: #ef4444;
-            color: white;
-        }
-
         .btn-open {
             background: #10b981;
             color: white;
@@ -241,18 +216,13 @@
             color: white;
         }
 
-        .btn-in-class {
-            background: #3b82f6;
+        .btn-in-cabin {
+            background: #10b981;
             color: white;
         }
 
-        .btn-in-meeting {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .btn-out {
-            background: #6b7280;
+        .btn-not-in-cabin {
+            background: #ef4444;
             color: white;
         }
 
@@ -424,16 +394,28 @@
                     <span class="card-title">📚 Library</span>
                     <span class="card-icon">📖</span>
                 </div>
-                <div class="status">Click to view floors</div>
+                <div class="status" id="library-status">Click to update</div>
+                <div class="last-updated" id="library-time"></div>
             </div>
 
-            <!-- Student Centre Card -->
-            <div class="card" onclick="openModal('studentcentre')">
+            <!-- Nescafe Card -->
+            <div class="card" onclick="openModal('nescafe')">
                 <div class="card-header">
-                    <span class="card-title">☕ Student Centre</span>
-                    <span class="card-icon">🏪</span>
+                    <span class="card-title">☕ Nescafe</span>
+                    <span class="card-icon">🥤</span>
                 </div>
-                <div class="status">Click to view shops</div>
+                <div class="status" id="nescafe-status">Click to update</div>
+                <div class="last-updated" id="nescafe-time"></div>
+            </div>
+
+            <!-- Nandini Card -->
+            <div class="card" onclick="openModal('nandini')">
+                <div class="card-header">
+                    <span class="card-title">🥛 Nandini</span>
+                    <span class="card-icon">🧃</span>
+                </div>
+                <div class="status" id="nandini-status">Click to update</div>
+                <div class="last-updated" id="nandini-time"></div>
             </div>
 
             <!-- Badminton Courts Card -->
@@ -477,14 +459,9 @@
                 mess: { status: null, confirmations: 0, votes: [], lastUpdated: null, confirmed: false },
                 classrooms: {},
                 gym: { count: 0, reports: [], lastUpdated: null },
-                library: {
-                    ground: { count: 0, reports: [], lastUpdated: null },
-                    first: { count: 0, reports: [], lastUpdated: null }
-                },
-                studentcentre: {
-                    nescafe: { status: null, lastUpdated: null },
-                    nandini: { status: null, lastUpdated: null }
-                },
+                library: { count: 0, reports: [], lastUpdated: null },
+                nescafe: { status: null, lastUpdated: null },
+                nandini: { status: null, lastUpdated: null },
                 badminton: { occupied: 0, reports: [], lastUpdated: null },
                 faculty: {}
             };
@@ -497,7 +474,7 @@
                                'Dr Ishfaq', 'Dr Shameer', 'Dr Irfan', 'Dr Sushmita', 'Dr Asha', 
                                'Dr Nageshwar', 'Dean'];
             facultyList.forEach(function(name) {
-                defaultData.faculty[name] = { status: 'available', lastUpdated: Date.now() };
+                defaultData.faculty[name] = { status: 'not-in-cabin', lastUpdated: Date.now() };
             });
 
             localStorage.setItem('campusData', JSON.stringify(defaultData));
@@ -556,12 +533,53 @@
                     gymEl.className = 'status not-updated';
                 } else {
                     const avgCount = Math.round(data.gym.reports.reduce(function(a, b) { return a + b; }, 0) / data.gym.reports.length);
-                    let status = avgCount <= 5 ? 'Empty' : avgCount <= 15 ? 'Moderate' : 'Crowded';
-                    let statusClass = avgCount <= 5 ? 'empty' : avgCount <= 15 ? 'moderate' : 'crowded';
-                    gymEl.textContent = status + ' (' + avgCount + ' people)';
-                    gymEl.className = 'status ' + statusClass;
+                    gymEl.textContent = avgCount + ' people';
+                    gymEl.className = 'status neutral';
                 }
                 gymTimeEl.textContent = 'Updated ' + getTimeSince(data.gym.lastUpdated);
+            }
+
+            // Library
+            const libraryEl = document.getElementById('library-status');
+            const libraryTimeEl = document.getElementById('library-time');
+            if (libraryEl && libraryTimeEl) {
+                if (checkExpiry(data.library.lastUpdated) || data.library.reports.length === 0) {
+                    libraryEl.textContent = 'Not Updated - Click to Update';
+                    libraryEl.className = 'status not-updated';
+                } else {
+                    const avgCount = Math.round(data.library.reports.reduce(function(a, b) { return a + b; }, 0) / data.library.reports.length);
+                    libraryEl.textContent = avgCount + ' people';
+                    libraryEl.className = 'status neutral';
+                }
+                libraryTimeEl.textContent = 'Updated ' + getTimeSince(data.library.lastUpdated);
+            }
+
+            // Nescafe
+            const nescafeEl = document.getElementById('nescafe-status');
+            const nescafeTimeEl = document.getElementById('nescafe-time');
+            if (nescafeEl && nescafeTimeEl) {
+                if (!data.nescafe.status || checkExpiry(data.nescafe.lastUpdated)) {
+                    nescafeEl.textContent = 'Not Updated - Click to Update';
+                    nescafeEl.className = 'status not-updated';
+                } else {
+                    nescafeEl.textContent = data.nescafe.status === 'open' ? 'Open' : 'Closed';
+                    nescafeEl.className = 'status ' + (data.nescafe.status === 'open' ? 'open' : 'closed');
+                }
+                nescafeTimeEl.textContent = 'Updated ' + getTimeSince(data.nescafe.lastUpdated);
+            }
+
+            // Nandini
+            const nandiniEl = document.getElementById('nandini-status');
+            const nandiniTimeEl = document.getElementById('nandini-time');
+            if (nandiniEl && nandiniTimeEl) {
+                if (!data.nandini.status || checkExpiry(data.nandini.lastUpdated)) {
+                    nandiniEl.textContent = 'Not Updated - Click to Update';
+                    nandiniEl.className = 'status not-updated';
+                } else {
+                    nandiniEl.textContent = data.nandini.status === 'open' ? 'Open' : 'Closed';
+                    nandiniEl.className = 'status ' + (data.nandini.status === 'open' ? 'open' : 'closed');
+                }
+                nandiniTimeEl.textContent = 'Updated ' + getTimeSince(data.nandini.lastUpdated);
             }
 
             // Badminton
@@ -574,7 +592,7 @@
                 } else {
                     const avgOccupied = Math.round(data.badminton.reports.reduce(function(a, b) { return a + b; }, 0) / data.badminton.reports.length);
                     badmintonEl.textContent = avgOccupied + '/4 Courts Occupied';
-                    badmintonEl.className = 'status ' + (avgOccupied === 0 ? 'empty' : avgOccupied <= 2 ? 'moderate' : 'crowded');
+                    badmintonEl.className = 'status neutral';
                 }
                 badmintonTimeEl.textContent = 'Updated ' + getTimeSince(data.badminton.lastUpdated);
             }
@@ -632,51 +650,27 @@
                 html += '<button class="btn btn-available" onclick="updateGymCount()">Submit Count</button>';
                 html += '<button class="btn btn-close" onclick="closeModal()">Close</button>';
             } else if (type === 'library') {
-                html = '<div class="modal-header">📚 Library</div><div class="sub-items">';
-                ['ground', 'first'].forEach(function(floor) {
-                    const floorData = data.library[floor];
-                    const avgCount = floorData.reports.length > 0 ? Math.round(floorData.reports.reduce(function(a, b) { return a + b; }, 0) / floorData.reports.length) : 0;
-                    const isExpired = checkExpiry(floorData.lastUpdated);
-                    const hasData = floorData.reports.length > 0;
-                    
-                    let status, statusClass, displayText;
-                    if (!hasData || isExpired) {
-                        status = 'Not Updated';
-                        statusClass = 'not-updated';
-                        displayText = 'Not Updated';
-                    } else {
-                        status = avgCount <= 10 ? 'Empty' : avgCount <= 30 ? 'Moderate' : 'Crowded';
-                        statusClass = avgCount <= 10 ? 'empty' : avgCount <= 30 ? 'moderate' : 'crowded';
-                        displayText = status + ' (' + avgCount + ')';
-                    }
-                    
-                    html += '<div class="sub-item" onclick="updateLibraryFloor(\'' + floor + '\')">';
-                    html += '<span class="sub-item-name">' + (floor === 'ground' ? 'Ground Floor' : 'First Floor') + '</span>';
-                    html += '<span class="status ' + statusClass + '">' + displayText + '</span>';
-                    html += '</div>';
-                });
-                html += '</div><button class="btn btn-close" onclick="closeModal()">Close</button>';
-            } else if (type === 'studentcentre') {
-                html = '<div class="modal-header">☕ Student Centre</div><div class="sub-items">';
-                ['nescafe', 'nandini'].forEach(function(shop) {
-                    const shopData = data.studentcentre[shop];
-                    const isExpired = checkExpiry(shopData.lastUpdated);
-                    
-                    let statusText, statusClass;
-                    if (!shopData.status || isExpired) {
-                        statusText = 'Not Updated';
-                        statusClass = 'not-updated';
-                    } else {
-                        statusText = shopData.status === 'open' ? 'Open' : 'Closed';
-                        statusClass = shopData.status === 'open' ? 'open' : 'closed';
-                    }
-                    
-                    html += '<div class="sub-item" onclick="updateStudentCentre(\'' + shop + '\')">';
-                    html += '<span class="sub-item-name">' + (shop === 'nescafe' ? 'Nescafe' : 'Nandini') + '</span>';
-                    html += '<span class="status ' + statusClass + '">' + statusText + '</span>';
-                    html += '</div>';
-                });
-                html += '</div><button class="btn btn-close" onclick="closeModal()">Close</button>';
+                html = '<div class="modal-header">📚 Library</div>';
+                html += '<div class="input-group">';
+                html += '<label>Number of people in library (as seen by occupied bag storage area):</label>';
+                html += '<input type="number" id="library-count" min="0" placeholder="Enter count based on bags">';
+                html += '</div>';
+                html += '<button class="btn btn-available" onclick="updateLibraryCount()">Submit Count</button>';
+                html += '<button class="btn btn-close" onclick="closeModal()">Close</button>';
+            } else if (type === 'nescafe') {
+                html = '<div class="modal-header">☕ Nescafe Status</div>';
+                html += '<div class="button-group">';
+                html += '<button class="btn btn-open" onclick="updateShopStatus(\'nescafe\', \'open\')">Open</button>';
+                html += '<button class="btn btn-closed" onclick="updateShopStatus(\'nescafe\', \'closed\')">Closed</button>';
+                html += '</div>';
+                html += '<button class="btn btn-close" onclick="closeModal()">Close</button>';
+            } else if (type === 'nandini') {
+                html = '<div class="modal-header">🥛 Nandini Status</div>';
+                html += '<div class="button-group">';
+                html += '<button class="btn btn-open" onclick="updateShopStatus(\'nandini\', \'open\')">Open</button>';
+                html += '<button class="btn btn-closed" onclick="updateShopStatus(\'nandini\', \'closed\')">Closed</button>';
+                html += '</div>';
+                html += '<button class="btn btn-close" onclick="closeModal()">Close</button>';
             } else if (type === 'badminton') {
                 html = '<div class="modal-header">🏸 Badminton Courts</div>';
                 html += '<div class="input-group">';
@@ -689,7 +683,7 @@
                 html = '<div class="modal-header">👨‍🏫 Faculty Availability</div><div class="sub-items">';
                 Object.keys(data.faculty).forEach(function(name) {
                     const fac = data.faculty[name];
-                    const statusMap = { available: 'Available', 'in-class': 'In Class', 'in-meeting': 'In Meeting', out: 'Out of Office' };
+                    const statusMap = { 'in-cabin': 'In Cabin', 'not-in-cabin': 'Not in Cabin' };
                     html += '<div class="sub-item" onclick="updateFaculty(\'' + name + '\')">';
                     html += '<span class="sub-item-name">' + name + '</span>';
                     html += '<span class="status ' + fac.status + '">' + statusMap[fac.status] + '</span>';
@@ -769,42 +763,31 @@
             closeModal();
         }
 
-        function updateLibraryFloor(floor) {
-            const count = prompt('How many people are on the ' + (floor === 'ground' ? 'Ground' : 'First') + ' Floor?');
-            const num = parseInt(count);
-            
-            if (isNaN(num) || num < 0) {
+        function updateLibraryCount() {
+            const count = parseInt(document.getElementById('library-count').value);
+            if (isNaN(count) || count < 0) {
                 alert('Please enter a valid number');
                 return;
             }
 
             const data = getData();
-            data.library[floor].reports.push(num);
-            if (data.library[floor].reports.length > 3) data.library[floor].reports.shift();
-            data.library[floor].lastUpdated = Date.now();
+            data.library.reports.push(count);
+            if (data.library.reports.length > 3) data.library.reports.shift();
+            data.library.lastUpdated = Date.now();
             
             saveData(data);
-            alert('Library floor count updated!');
-            openModal('library');
+            alert('Library count updated!');
+            closeModal();
         }
 
-        function updateStudentCentre(shop) {
+        function updateShopStatus(shop, status) {
             const data = getData();
-            const shopData = data.studentcentre[shop];
-            
-            const choice = prompt('Update ' + (shop === 'nescafe' ? 'Nescafe' : 'Nandini') + ' status:\n1. Open\n2. Closed\n\nEnter 1 or 2:');
-            
-            if (choice !== '1' && choice !== '2') {
-                alert('Invalid choice');
-                return;
-            }
-            
-            shopData.status = choice === '1' ? 'open' : 'closed';
-            shopData.lastUpdated = Date.now();
+            data[shop].status = status;
+            data[shop].lastUpdated = Date.now();
             
             saveData(data);
             alert((shop === 'nescafe' ? 'Nescafe' : 'Nandini') + ' status updated!');
-            openModal('studentcentre');
+            closeModal();
         }
 
         function updateBadmintonCount() {
@@ -825,8 +808,8 @@
         }
 
         function updateFaculty(name) {
-            const newStatus = prompt('Update status for ' + name + ':\n1. Available\n2. In Class\n3. In Meeting\n4. Out of Office\n\nEnter 1-4:');
-            const statusMap = { '1': 'available', '2': 'in-class', '3': 'in-meeting', '4': 'out' };
+            const newStatus = prompt('Update status for ' + name + ':\n1. In Cabin\n2. Not in Cabin\n\nEnter 1 or 2:');
+            const statusMap = { '1': 'in-cabin', '2': 'not-in-cabin' };
             
             if (!statusMap[newStatus]) {
                 alert('Invalid choice');
