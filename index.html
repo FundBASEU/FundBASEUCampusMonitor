@@ -3,375 +3,748 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FundBASEU Live Tracker</title>
+<title>FundBASEU Tracker</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body{
-  font-family:sans-serif;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  margin:0;
-  padding:15px;
-  color:white;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-h1{text-align:center;font-size:20px;margin-bottom:5px;}
-.live{text-align:center;font-size:14px;margin-bottom:15px;}
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 15px;
 }
-.card{
-  background:white;
-  color:#333;
-  padding:16px;
-  border-radius:14px;
-  box-shadow:0 4px 18px rgba(0,0,0,.25);
-  cursor:pointer;
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
-.card h3{margin:0 0 6px 0;font-size:15px;}
-.status{margin-top:6px;font-weight:bold;}
-.small{font-size:11px;margin-top:4px;}
-.orange{color:#f59e0b;}
-.blue{color:#3b82f6;}
-.modal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  justify-content:center;
-  align-items:center;
-  padding:15px;
+
+header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
 }
-.modal-content{
-  background:white;
-  color:#333;
-  width:100%;
-  max-width:400px;
-  border-radius:14px;
-  padding:18px;
-  position:relative;
+
+header h1 {
+  font-size: 2.2em;
+  margin-bottom: 8px;
+  text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+  font-weight: 800;
+  letter-spacing: 1px;
 }
-.close-btn{
-  position:absolute;
-  top:10px;
-  right:12px;
-  font-size:18px;
-  cursor:pointer;
+
+header p {
+  font-size: 1em;
+  opacity: 0.95;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
 }
-button{
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  border:none;
-  border-radius:8px;
-  font-weight:bold;
-  cursor:pointer;
+
+.live-users {
+  text-align: center;
+  color: white;
+  font-size: 0.9em;
+  margin-bottom: 20px;
+  opacity: 0.9;
 }
-input{
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  border:2px solid #ddd;
-  border-radius:8px;
-  font-size:14px;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
 }
-.refresh{
-  position:fixed;
-  bottom:15px;
-  right:15px;
-  background:#3b82f6;
-  color:white;
-  border-radius:30px;
-  padding:10px 16px;
-  font-size:13px;
-  z-index:999;
+
+.card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  -webkit-tap-highlight-color: transparent;
 }
-label{
-  display:block;
-  margin:10px 0 5px 0;
-  font-weight:bold;
-  font-size:13px;
+
+.card:active {
+  transform: scale(0.98);
 }
-.menu-text{
-  font-size:10px;
-  color:#666;
-  margin-top:4px;
-  line-height:1.3;
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.card-title {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #333;
+}
+
+.card-icon {
+  font-size: 1.8em;
+}
+
+.status {
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-weight: bold;
+  text-align: center;
+  margin: 10px 0;
+  font-size: 0.95em;
+}
+
+.status.available, .status.open {
+  background: #10b981;
+  color: white;
+}
+
+.status.finished, .status.closed {
+  background: #ef4444;
+  color: white;
+}
+
+.status.not-updated {
+  background: #f59e0b;
+  color: white;
+}
+
+.status.neutral {
+  background: #3b82f6;
+  color: white;
+}
+
+.last-updated {
+  font-size: 0.8em;
+  color: #666;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.votes-info {
+  font-size: 0.75em;
+  color: #666;
+  text-align: center;
+  margin-top: 5px;
+}
+
+.menu-info {
+  font-size: 0.85em;
+  color: #555;
+  margin-top: 8px;
+  padding: 8px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.75);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-header {
+  font-size: 1.6em;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.button-group {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-available {
+  background: #10b981;
+  color: white;
+}
+
+.btn-finished {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-open {
+  background: #10b981;
+  color: white;
+}
+
+.btn-closed {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-close {
+  background: #6b7280;
+  color: white;
+  margin-top: 15px;
+}
+
+.input-group {
+  margin: 20px 0;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #333;
+  font-size: 0.95em;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1em;
+}
+
+.confirmation-notice {
+  background: #fef3c7;
+  padding: 12px;
+  border-radius: 10px;
+  margin: 15px 0;
+  text-align: center;
+  font-weight: bold;
+  color: #92400e;
+  font-size: 0.9em;
+}
+
+.refresh-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 20px;
+  font-size: 0.9em;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  z-index: 999;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  header h1 {
+    font-size: 1.8em;
+  }
+
+  header p {
+    font-size: 0.9em;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .card-title {
+    font-size: 1.2em;
+  }
+
+  .modal-content {
+    padding: 20px;
+    max-height: 90vh;
+  }
+
+  .modal-header {
+    font-size: 1.4em;
+  }
 }
 </style>
 </head>
 <body>
 
-<h1>🎓 FundBASEU Live Tracker</h1>
-<div class="live">👥 Live Users: <span id="liveCount">0</span></div>
-<button class="refresh" onclick="location.reload()">Refresh Live 🔄</button>
+<div class="container">
+  <header>
+    <h1>🎓 FundBASEU Tracker</h1>
+    <p>Real-time campus status updates by students, for students</p>
+  </header>
 
-<div class="grid">
+  <div class="live-users">👥 Live Users: <span id="liveCount">0</span></div>
 
-<div class="card" onclick="openModal('mess')">
-<h3>🍽️ Mess</h3>
-<div id="mess-meal" class="status blue"></div>
-<div id="mess-menu" class="menu-text"></div>
-<div id="mess-votes" class="small"></div>
-<div id="mess-pending" class="small"></div>
-<div id="mess-time" class="small"></div>
+  <div class="grid">
+    <!-- Mess Card -->
+    <div class="card" onclick="openModal('mess')">
+      <div class="card-header">
+        <span class="card-title">🍽️ Mess</span>
+        <span class="card-icon">🍛</span>
+      </div>
+      <div id="mess-meal" class="status neutral"></div>
+      <div id="mess-menu" class="menu-info"></div>
+      <div id="mess-votes" class="votes-info"></div>
+      <div id="mess-pending" class="votes-info"></div>
+      <div id="mess-time" class="last-updated"></div>
+    </div>
+
+    <!-- Gym Card -->
+    <div class="card" onclick="openModal('gym')">
+      <div class="card-header">
+        <span class="card-title">🏋️ Gym</span>
+        <span class="card-icon">💪</span>
+      </div>
+      <div id="gym-status" class="status not-updated">Click to update</div>
+      <div id="gym-time" class="last-updated"></div>
+    </div>
+
+    <!-- Nescafe Card -->
+    <div class="card" onclick="openModal('nescafe')">
+      <div class="card-header">
+        <span class="card-title">☕ Nescafé</span>
+        <span class="card-icon">🥤</span>
+      </div>
+      <div id="nescafe-status" class="status not-updated">Click to update</div>
+      <div id="nescafe-votes" class="votes-info"></div>
+      <div id="nescafe-pending" class="votes-info"></div>
+      <div id="nescafe-time" class="last-updated"></div>
+    </div>
+
+    <!-- Nandini Card -->
+    <div class="card" onclick="openModal('nandini')">
+      <div class="card-header">
+        <span class="card-title">🥛 Nandini</span>
+        <span class="card-icon">🧃</span>
+      </div>
+      <div id="nandini-status" class="status not-updated">Click to update</div>
+      <div id="nandini-votes" class="votes-info"></div>
+      <div id="nandini-pending" class="votes-info"></div>
+      <div id="nandini-time" class="last-updated"></div>
+    </div>
+
+    <!-- Badminton Card -->
+    <div class="card" onclick="openModal('badminton')">
+      <div class="card-header">
+        <span class="card-title">🏸 Badminton</span>
+        <span class="card-icon">🎾</span>
+      </div>
+      <div id="badminton-status" class="status not-updated">Click to update</div>
+      <div id="badminton-votes" class="votes-info"></div>
+      <div id="badminton-pending" class="votes-info"></div>
+      <div id="badminton-time" class="last-updated"></div>
+    </div>
+  </div>
 </div>
 
-<div class="card" onclick="openModal('gym')">
-<h3>🏋️ Gym Crowd</h3>
-<div id="gym-status" class="status orange">Not Updated</div>
-<div id="gym-time" class="small"></div>
-</div>
+<button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
 
-<div class="card" onclick="openModal('nescafe')">
-<h3>☕ Nescafé</h3>
-<div id="nescafe-status" class="status orange">Not Updated</div>
-<div id="nescafe-time" class="small"></div>
-</div>
-
-<div class="card" onclick="openModal('nandini')">
-<h3>🥛 Nandini</h3>
-<div id="nandini-status" class="status orange">Not Updated</div>
-<div id="nandini-time" class="small"></div>
-</div>
-
-<div class="card" onclick="openModal('badminton')">
-<h3>🏸 Badminton Courts</h3>
-<div id="badminton-status" class="status orange">Not Updated</div>
-<div id="badminton-votes" class="small"></div>
-<div id="badminton-pending" class="small"></div>
-<div id="badminton-time" class="small"></div>
-</div>
-
-</div>
-
+<!-- Modal -->
 <div class="modal" id="modal">
-<div class="modal-content" id="modal-content">
-<span class="close-btn" onclick="closeModal()">✕</span>
-</div>
+  <div class="modal-content" id="modal-content">
+  </div>
 </div>
 
 <script>
 
 // ---------- SESSION TAB LIMIT ----------
-let sessionId=sessionStorage.getItem("sessionId");
-if(!sessionId){
-sessionId='sess_'+Math.random().toString(36).substr(2,9);
-sessionStorage.setItem("sessionId",sessionId);
+let sessionId = sessionStorage.getItem("sessionId");
+if (!sessionId) {
+  sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+  sessionStorage.setItem("sessionId", sessionId);
 }
-let sessions=JSON.parse(localStorage.getItem("activeSessions")||"[]");
-if(!sessions.includes(sessionId)){
-sessions.push(sessionId);
-localStorage.setItem("activeSessions",JSON.stringify(sessions));
+let sessions = JSON.parse(localStorage.getItem("activeSessions") || "[]");
+if (!sessions.includes(sessionId)) {
+  sessions.push(sessionId);
+  localStorage.setItem("activeSessions", JSON.stringify(sessions));
 }
-if(sessions.length>2){
-document.body.innerHTML="<h2 style='color:white;text-align:center'>Maximum 2 tabs allowed</h2>";
-throw new Error("Tab limit exceeded");
+if (sessions.length > 2) {
+  document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:100px;'>Maximum 2 tabs allowed</h2>";
+  throw new Error("Tab limit exceeded");
 }
-window.addEventListener("beforeunload",()=>{
-let sessions=JSON.parse(localStorage.getItem("activeSessions")||"[]");
-sessions=sessions.filter(id=>id!==sessionId);
-localStorage.setItem("activeSessions",JSON.stringify(sessions));
+window.addEventListener("beforeunload", () => {
+  let sessions = JSON.parse(localStorage.getItem("activeSessions") || "[]");
+  sessions = sessions.filter(id => id !== sessionId);
+  localStorage.setItem("activeSessions", JSON.stringify(sessions));
 });
 
 // ---------- FIREBASE ----------
 firebase.initializeApp({
-apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
-authDomain:"fundbaseu-tracker.firebaseapp.com",
-databaseURL:"https://fundbaseu-tracker-default-rtdb.firebaseio.com",
-projectId:"fundbaseu-tracker"
+  apiKey: "AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
+  authDomain: "fundbaseu-tracker.firebaseapp.com",
+  databaseURL: "https://fundbaseu-tracker-default-rtdb.firebaseio.com",
+  projectId: "fundbaseu-tracker"
 });
-var db=firebase.database();
+var db = firebase.database();
 
 // Presence
-var p=db.ref("presence").push();
+var p = db.ref("presence").push();
 p.set(true);
 p.onDisconnect().remove();
-db.ref("presence").on("value",s=>{
-document.getElementById("liveCount").innerText=s.numChildren();
+db.ref("presence").on("value", s => {
+  document.getElementById("liveCount").innerText = s.numChildren();
 });
 
 // Device ID
-var deviceId=localStorage.getItem("deviceId");
-if(!deviceId){
-deviceId='dev_'+Math.random().toString(36).substr(2,9);
-localStorage.setItem("deviceId",deviceId);
+var deviceId = localStorage.getItem("deviceId");
+if (!deviceId) {
+  deviceId = 'dev_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem("deviceId", deviceId);
 }
 
-const THRESHOLD_DEFAULT=3;
-const THRESHOLD_BADMINTON=2;
+const THRESHOLD_DEFAULT = 3;
+const THRESHOLD_BADMINTON = 2;
 
-// ---------- MESS TIME ENGINE ----------
-function getCurrentMeal(){
-const now=new Date();
-const minutes=now.getHours()*60+now.getMinutes();
-
-if(minutes>=450 && minutes<=540) return "Breakfast";
-if(minutes>=750 && minutes<=840) return "Lunch";
-if(minutes>=1020 && minutes<=1080) return "Snacks";
-if(minutes>=1170 && minutes<=1260) return "Dinner";
-
-if(minutes<450) return "Breakfast";
-if(minutes<750) return "Lunch";
-if(minutes<1020) return "Snacks";
-if(minutes<1170) return "Dinner";
-return "Breakfast";
-}
-
-function isEvenWeek(){
-const now=new Date();
-const oneJan=new Date(now.getFullYear(),0,1);
-const week=Math.ceil((((now-oneJan)/86400000)+oneJan.getDay()+1)/7);
-return week%2===0;
-}
-
-const menu={
-Breakfast:{
-odd:"Idly + Vada + Sambar + Chutney",
-even:"Millets Khichdi + Idly + Vada + Sambar"
-},
-Lunch:"Chapathi + Rice + Dal + Veg + Curd",
-Snacks:"Snack + Tea",
-Dinner:"Chapathi + Rice + Dal + Veg"
+// ---------- MESS MENU ENGINE (Based on uploaded image) ----------
+const messMenu = {
+  Monday: {
+    Breakfast: "Dosa + Vada + Sambar + Chutney",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Snacks: "Bajji + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  },
+  Tuesday: {
+    Breakfast: "Idly + Vada + Sambar + Chutney",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Snacks: "Biscuits + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  },
+  Wednesday: {
+    Breakfast: "Poori + Aloo Curry + Chutney",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Snacks: "Bread Pakoda + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  },
+  Thursday: {
+    Breakfast: "Upma + Vada + Chutney",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Snacks: "Samosa + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  },
+  Friday: {
+    Breakfast: "Pongal + Vada + Sambar + Chutney",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Snacks: "Mixture + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  },
+  Saturday: {
+    Breakfast: "Roti + Sabzi + Chutney",
+    Lunch: "Chapathi + Rice + Dal + Veg + Curd",
+    Snacks: "Vada Pav + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  },
+  Sunday: {
+    Breakfast: "Pesarattu + Upma + Chutney",
+    Lunch: "Special Biryani + Raita",
+    Snacks: "Cutlet + Tea",
+    Dinner: "Chapathi + Rice + Dal + Veg"
+  }
 };
 
-function updateMessDisplay(){
-const meal=getCurrentMeal();
-const even=isEvenWeek();
-let food=(meal==="Breakfast")?(even?menu.Breakfast.even:menu.Breakfast.odd):menu[meal];
-document.getElementById("mess-meal").innerHTML=meal;
-document.getElementById("mess-menu").innerHTML=food;
+function getCurrentMeal() {
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+
+  if (minutes >= 450 && minutes <= 600) return "Breakfast";  // 7:30 AM - 10:00 AM
+  if (minutes >= 750 && minutes <= 900) return "Lunch";      // 12:30 PM - 3:00 PM
+  if (minutes >= 1020 && minutes <= 1140) return "Snacks";   // 5:00 PM - 7:00 PM
+  if (minutes >= 1170 && minutes <= 1320) return "Dinner";   // 7:30 PM - 10:00 PM
+
+  // Predict next meal
+  if (minutes < 450) return "Breakfast";
+  if (minutes < 750) return "Lunch";
+  if (minutes < 1020) return "Snacks";
+  if (minutes < 1170) return "Dinner";
+  return "Breakfast"; // After 10 PM, show tomorrow's breakfast
 }
+
+function getDayOfWeek() {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const now = new Date();
+  
+  // If after 10 PM, show next day's breakfast
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  if (minutes >= 1320) { // After 10 PM
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return days[tomorrow.getDay()];
+  }
+  
+  return days[now.getDay()];
+}
+
+function updateMessDisplay() {
+  const meal = getCurrentMeal();
+  const day = getDayOfWeek();
+  const menu = messMenu[day][meal];
+  
+  document.getElementById("mess-meal").innerHTML = meal;
+  document.getElementById("mess-menu").innerHTML = menu;
+}
+
 updateMessDisplay();
-setInterval(updateMessDisplay,60000);
+setInterval(updateMessDisplay, 60000); // Update every minute
 
 // ---------- MODAL ----------
-function openModal(place){
-var html="<span class='close-btn' onclick='closeModal()'>✕</span><h3>Update</h3>";
+function openModal(place) {
+  let html = '<div class="modal-header">';
+  
+  if (place === 'mess') {
+    html += '🍽️ Mess Status</div>';
+    const data = getData();
+    const needsConfirm = data.mess && data.mess.confirmations < 3;
+    const currentVotes = data.mess ? data.mess.confirmations : 0;
+    
+    if (needsConfirm) {
+      html += '<div class="confirmation-notice">Current votes: ' + currentVotes + '/3 - Needs ' + (3 - currentVotes) + ' more confirmation(s)</div>';
+    }
+    html += '<div class="button-group">';
+    html += '<button class="btn btn-available" onclick="vote(\'mess\', \'Food Available\')">Food Available</button>';
+    html += '<button class="btn btn-finished" onclick="vote(\'mess\', \'Food Not Available\')">Food Not Available</button>';
+    html += '</div>';
+  }
+  else if (place === 'gym') {
+    html += '🏋️ Gym Crowd</div>';
+    html += '<div class="input-group">';
+    html += '<label>How many people are in the gym?</label>';
+    html += '</div>';
+    html += '<div class="button-group">';
+    html += '<button class="btn btn-available" onclick="updateGym(\'0-3\')">0-3 people</button>';
+    html += '<button class="btn btn-available" onclick="updateGym(\'3-5\')">3-5 people</button>';
+    html += '<button class="btn btn-available" onclick="updateGym(\'5+\')">5+ people</button>';
+    html += '</div>';
+  }
+  else if (place === 'badminton') {
+    html += '🏸 Badminton Courts</div>';
+    html += '<div class="input-group">';
+    html += '<label>How many courts are occupied? (0-4)</label>';
+    html += '<input type="number" id="badminton-val" min="0" max="4" placeholder="Enter 0-4">';
+    html += '</div>';
+    html += '<button class="btn btn-available" onclick="voteBadminton()">Submit</button>';
+  }
+  else if (place === 'nescafe') {
+    html += '☕ Nescafé Status</div>';
+    html += '<div class="button-group">';
+    html += '<button class="btn btn-open" onclick="vote(\'nescafe\', \'Open\')">Open</button>';
+    html += '<button class="btn btn-closed" onclick="vote(\'nescafe\', \'Closed\')">Closed</button>';
+    html += '</div>';
+  }
+  else if (place === 'nandini') {
+    html += '🥛 Nandini Status</div>';
+    html += '<div class="button-group">';
+    html += '<button class="btn btn-open" onclick="vote(\'nandini\', \'Open\')">Open</button>';
+    html += '<button class="btn btn-closed" onclick="vote(\'nandini\', \'Closed\')">Closed</button>';
+    html += '</div>';
+  }
+  
+  html += '<button class="btn btn-close" onclick="closeModal()">Close</button>';
+  
+  document.getElementById("modal-content").innerHTML = html;
+  document.getElementById("modal").classList.add("active");
+}
 
-if(place==='mess'){
-html+="<button onclick=vote('mess','Food Available')>Food Available</button>";
-html+="<button onclick=vote('mess','Food Not Available')>Food Not Available</button>";
-}
-else if(place==='gym'){
-html+="<label>How many people in gym?</label>";
-html+="<button onclick=updateGym('0-3')>0-3 people</button>";
-html+="<button onclick=updateGym('3-5')>3-5 people</button>";
-html+="<button onclick=updateGym('5+')>5+ people</button>";
-}
-else if(place==='badminton'){
-html+="<label>How many courts occupied? (0-4)</label>";
-html+="<input type='number' id='val' min='0' max='4' placeholder='Enter 0-4'>";
-html+="<button onclick=vote('badminton',document.getElementById('val').value)>Submit</button>";
-}
-else{
-html+="<button onclick=vote('"+place+"','Open')>Open</button>";
-html+="<button onclick=vote('"+place+"','Closed')>Closed</button>";
+function closeModal() {
+  document.getElementById("modal").classList.remove("active");
 }
 
-document.getElementById("modal-content").innerHTML=html;
-document.getElementById("modal").style.display="flex";
-}
-
-function closeModal(){
-document.getElementById("modal").style.display="none";
+function getData() {
+  // Helper to track local confirmation state
+  return {
+    mess: { confirmations: 0 }
+  };
 }
 
 // ---------- VOTING ----------
-function vote(place,value){
-if(!value)return alert("Please enter a value");
+function vote(place, value) {
+  if (!value) return alert("Please select an option");
 
-var deviceRef=db.ref(place+"_deviceVotes/"+deviceId);
-deviceRef.once("value",snap=>{
-if(snap.exists())return alert("You already voted.");
+  var deviceRef = db.ref(place + "_deviceVotes/" + deviceId);
+  deviceRef.once("value", snap => {
+    if (snap.exists()) return alert("You already voted.");
 
-var voteRef=db.ref(place+"_votes/"+value);
-voteRef.transaction(c=>(c||0)+1,function(e,committed,snap){
-if(!snap)return;
-var votes=snap.val();
-var threshold=(place==='badminton')?THRESHOLD_BADMINTON:THRESHOLD_DEFAULT;
-var remaining=threshold-votes;
+    var voteRef = db.ref(place + "_votes/" + value);
+    voteRef.transaction(c => (c || 0) + 1, function(e, committed, snap) {
+      if (!snap) return;
+      var votes = snap.val();
+      var threshold = THRESHOLD_DEFAULT;
+      var remaining = threshold - votes;
 
-if(votes>=threshold){
-if(place==='badminton'){
-db.ref(place).set({count:parseInt(value),timestamp:Date.now()});
-}else{
-db.ref(place).set({status:value,timestamp:Date.now()});
-}
-db.ref(place+"_votes").remove();
-db.ref(place+"_pending").remove();
-db.ref(place+"_deviceVotes").remove();
-alert("Status updated successfully!");
-}else{
-db.ref(place+"_pending").set({message:"Awaiting "+remaining+" more confirmation(s)..."});
-alert("Vote recorded! Need "+remaining+" more confirmation(s)");
-}
-});
-deviceRef.set(true);
-});
-closeModal();
+      if (votes >= threshold) {
+        db.ref(place).set({ status: value, timestamp: Date.now() });
+        db.ref(place + "_votes").remove();
+        db.ref(place + "_pending").remove();
+        db.ref(place + "_deviceVotes").remove();
+        alert("Status updated successfully!");
+      } else {
+        db.ref(place + "_pending").set({ message: "Awaiting " + remaining + " more confirmation(s)" });
+        alert("Vote recorded! Need " + remaining + " more confirmation(s)");
+      }
+    });
+    deviceRef.set(true);
+  });
+  closeModal();
 }
 
-function updateGym(range){
-db.ref("gym").set({status:range,timestamp:Date.now()});
-alert("Gym status updated!");
-closeModal();
+function voteBadminton() {
+  const value = document.getElementById("badminton-val").value;
+  if (!value || value < 0 || value > 4) return alert("Please enter a number between 0-4");
+
+  var deviceRef = db.ref("badminton_deviceVotes/" + deviceId);
+  deviceRef.once("value", snap => {
+    if (snap.exists()) return alert("You already voted.");
+
+    var voteRef = db.ref("badminton_votes/" + value);
+    voteRef.transaction(c => (c || 0) + 1, function(e, committed, snap) {
+      if (!snap) return;
+      var votes = snap.val();
+      var threshold = THRESHOLD_BADMINTON;
+      var remaining = threshold - votes;
+
+      if (votes >= threshold) {
+        db.ref("badminton").set({ count: parseInt(value), timestamp: Date.now() });
+        db.ref("badminton_votes").remove();
+        db.ref("badminton_pending").remove();
+        db.ref("badminton_deviceVotes").remove();
+        alert("Status updated successfully!");
+      } else {
+        db.ref("badminton_pending").set({ message: "Awaiting " + remaining + " more confirmation(s)" });
+        alert("Vote recorded! Need " + remaining + " more confirmation(s)");
+      }
+    });
+    deviceRef.set(true);
+  });
+  closeModal();
 }
 
-function timeAgo(ts){
-if(!ts)return"";
-var m=Math.floor((Date.now()-ts)/60000);
-if(m<1)return"Updated just now";
-return"Updated "+m+" min ago";
+function updateGym(range) {
+  db.ref("gym").set({ status: range, timestamp: Date.now() });
+  alert("Gym status updated!");
+  closeModal();
+}
+
+function timeAgo(ts) {
+  if (!ts) return "";
+  var m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return "Updated just now";
+  if (m === 1) return "Updated 1 min ago";
+  if (m < 60) return "Updated " + m + " min ago";
+  const h = Math.floor(m / 60);
+  if (h === 1) return "Updated 1 hour ago";
+  return "Updated " + h + " hours ago";
 }
 
 // ---------- LISTENERS ----------
-['mess','nescafe','nandini','gym','badminton'].forEach(place=>{
+['mess', 'nescafe', 'nandini', 'gym', 'badminton'].forEach(place => {
+  db.ref(place).on("value", snap => {
+    var d = snap.val();
+    var statusEl = document.getElementById(place + '-status');
+    var timeEl = document.getElementById(place + '-time');
+    
+    if (!d) {
+      if (statusEl && place !== 'mess') {
+        statusEl.className = "status not-updated";
+        statusEl.innerHTML = "Click to update";
+      }
+      if (timeEl) timeEl.innerHTML = "";
+      return;
+    }
 
-db.ref(place).on("value",snap=>{
-var d=snap.val();
-if(!d){
-if(place!=='mess'){
-var el=document.getElementById(place+'-status');
-if(el){
-el.className="status orange";
-el.innerHTML="Not Updated";
-}
-}
-return;
-}
+    if (place === 'badminton') {
+      if (statusEl) {
+        statusEl.innerHTML = d.count + "/4 Courts Occupied";
+        statusEl.className = 'status neutral';
+      }
+      if (timeEl) timeEl.innerHTML = timeAgo(d.timestamp);
+    }
+    else if (place === 'mess') {
+      if (timeEl) timeEl.innerHTML = timeAgo(d.timestamp);
+    }
+    else if (place === 'gym') {
+      if (statusEl) {
+        statusEl.innerHTML = d.status + " people";
+        statusEl.className = 'status neutral';
+      }
+      if (timeEl) timeEl.innerHTML = timeAgo(d.timestamp);
+    }
+    else {
+      if (statusEl) {
+        statusEl.innerHTML = d.status;
+        statusEl.className = d.status === 'Open' ? 'status open' : 'status closed';
+      }
+      if (timeEl) timeEl.innerHTML = timeAgo(d.timestamp);
+    }
+  });
 
-if(place==='badminton'){
-document.getElementById(place+'-status').innerHTML=d.count+" courts occupied";
-document.getElementById(place+'-status').className='status blue';
-document.getElementById(place+'-time').innerHTML=timeAgo(d.timestamp);
-}
-else if(place==='mess'){
-document.getElementById('mess-time').innerHTML=timeAgo(d.timestamp);
-}
-else{
-document.getElementById(place+'-status').innerHTML=d.status;
-document.getElementById(place+'-status').className='status blue';
-document.getElementById(place+'-time').innerHTML=timeAgo(d.timestamp);
-}
+  if (place !== 'gym') {
+    db.ref(place + "_votes").on("value", snap => {
+      var total = 0;
+      snap.forEach(c => total += c.val());
+      var votesEl = document.getElementById(place + '-votes');
+      if (votesEl) votesEl.innerHTML = total > 0 ? "Votes: " + total : "";
+    });
+    
+    db.ref(place + "_pending").on("value", snap => {
+      var pendingEl = document.getElementById(place + '-pending');
+      if (pendingEl) pendingEl.innerHTML = snap.val() ? snap.val().message : "";
+    });
+  }
 });
 
-if(place!=='gym'){
-db.ref(place+"_votes").on("value",snap=>{
-var total=0;
-snap.forEach(c=>total+=c.val());
-var votesEl=document.getElementById(place+'-votes');
-if(votesEl)votesEl.innerHTML=total>0?"Votes: "+total:"";
-});
-db.ref(place+"_pending").on("value",snap=>{
-var pendingEl=document.getElementById(place+'-pending');
-if(pendingEl)pendingEl.innerHTML=snap.val()?snap.val().message:"";
-});
-}
-});
 </script>
 </body>
 </html>
