@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Monitor Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .card-icon {
+            font-size: 2em;
+        }
+
+        .status {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .status.available, .status.open, .status.free, .status.empty {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.finished, .status.closed, .status.occupied, .status.crowded {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status.moderate {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status.in-class {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .status.in-meeting {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status.out {
+            background: #6b7280;
+            color: white;
+        }
+
+        .last-updated {
+            font-size: 0.85em;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .button-group {
+            display: grid;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-available {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-finished {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-occupied {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-free {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-empty {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-moderate {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-crowded {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-open {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-closed {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-in-class {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-in-meeting {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-out {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-close {
+            background: #6b7280;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .confirmation-notice {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: bold;
+            color: #92400e;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .sub-items {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .sub-item {
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sub-item:hover {
+            background: #e5e7eb;
+        }
+
+        .sub-item-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .password-input {
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Campus Monitor Dashboard</h1>
+            <p>Real-time campus status updates by students, for students</p>
+        </header>
+
+        <div class="grid">
+            <!-- Mess Card -->
+            <div class="card" onclick="openModal('mess')">
+                <div class="card-header">
+                    <span class="card-title">🍽️ Mess</span>
+                    <span class="card-icon">🍛</span>
+                </div>
+                <div class="status" id="mess-status">Loading...</div>
+                <div class="last-updated" id="mess-time"></div>
+            </div>
+
+            <!-- Classrooms Card -->
+            <div class="card" onclick="openModal('classrooms')">
+                <div class="card-header">
+                    <span class="card-title">🏫 Classrooms</span>
+                    <span class="card-icon">📚</span>
+                </div>
+                <div class="status">Click to view rooms</div>
+            </div>
+
+            <!-- Gym Card -->
+            <div class="card" onclick="openModal('gym')">
+                <div class="card-header">
+                    <span class="card-title">🏋️ Gym</span>
+                    <span class="card-icon">💪</span>
+                </div>
+                <div class="status" id="gym-status">Loading...</div>
+                <div class="last-updated" id="gym-time"></div>
+            </div>
+
+            <!-- Library Card -->
+            <div class="card" onclick="openModal('library')">
+                <div class="card-header">
+                    <span class="card-title">📚 Library</span>
+                    <span class="card-icon">📖</span>
+                </div>
+                <div class="status">Click to view floors</div>
+            </div>
+
+            <!-- Student Centre Card -->
+            <div class="card" onclick="openModal('studentcentre')">
+                <div class="card-header">
+                    <span class="card-title">☕ Student Centre</span>
+                    <span class="card-icon">🏪</span>
+                </div>
+                <div class="status">Click to view shops</div>
+            </div>
+
+            <!-- Badminton Courts Card -->
+            <div class="card" onclick="openModal('badminton')">
+                <div class="card-header">
+                    <span class="card-title">🏸 Badminton</span>
+                    <span class="card-icon">🎾</span>
+                </div>
+                <div class="status" id="badminton-status">Loading...</div>
+                <div class="last-updated" id="badminton-time"></div>
+            </div>
+
+            <!-- Faculty Card -->
+            <div class="card" onclick="openModal('faculty')">
+                <div class="card-header">
+                    <span class="card-title">👨‍🏫 Faculty</span>
+                    <span class="card-icon">🎓</span>
+                </div>
+                <div class="status">Click to view availability</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content" id="modal-content">
+            <!-- Dynamic content will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const FACULTY_PASSWORD = 'baseufac';
+        const AUTO_EXPIRY_TIME = 30 * 60 * 1000; // 30 minutes
+
+        // Initialize storage
+        function initStorage() {
+            const defaultData = {
+                mess: { status: 'available', confirmations: 0, votes: [], lastUpdated: Date.now() },
+                classrooms: {},
+                gym: { count: 0, reports: [], lastUpdated: Date.now() },
+                library: {
+                    ground: { count: 0, reports: [], lastUpdated: Date.now() },
+                    first: { count: 0, reports: [], lastUpdated: Date.now() }
+                },
+                studentcentre: {
+                    nescafe: { status: 'open', confirmations: 0, votes: [], lastUpdated: Date.now() },
+                    nandini: { status: 'open', confirmations: 0, votes: [], lastUpdated: Date.now() }
+                },
+                badminton: { occupied: 0, reports: [], lastUpdated: Date.now() },
+                faculty: {}
+            };
+
+            // Initialize classrooms
+            for (let i = 1; i <= 9; i++) {
+                defaultData.classrooms[`LH${i}`] = { status: 'free', confirmations: 0, votes: [], lastUpdated: Date.now() };
+            }
+
+            // Initialize faculty
+            const facultyList = ['Dr Bidur', 'Dr Megha', 'Dr Kasturi', 'Dr Moushmi', 'Dr Muzaffar', 
+                               'Dr Ishfaq', 'Dr Shameer', 'Dr Irfan', 'Dr Sushmita', 'Dr Asha', 
+                               'Dr Nageshwar', 'Dean'];
+            facultyList.forEach(name => {
+                defaultData.faculty[name] = { status: 'available', lastUpdated: Date.now() };
+            });
+
+            if (!localStorage.getItem('campusData')) {
+                localStorage.setItem('campusData', JSON.stringify(defaultData));
+            }
+        }
+
+        function getData() {
+            return JSON.parse(localStorage.getItem('campusData'));
+        }
+
+        function saveData(data) {
+            localStorage.setItem('campusData', JSON.stringify(data));
+            updateDisplay();
+        }
+
+        function checkExpiry(timestamp) {
+            return Date.now() - timestamp > AUTO_EXPIRY_TIME;
+        }
+
+        function getTimeSince(timestamp) {
+            const minutes = Math.floor((Date.now() - timestamp) / 60000);
+            if (minutes < 1) return 'Just now';
+            if (minutes === 1) return '1 minute ago';
+            if (minutes < 60) return `${minutes} minutes ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours === 1) return '1 hour ago';
+            return `${hours} hours ago`;
+        }
+
+        function updateDisplay() {
+            const data = getData();
+
+            // Mess
+            if (checkExpiry(data.mess.lastUpdated)) {
+                document.getElementById('mess-status').textContent = 'Status Expired - Update Needed';
+                document.getElementById('mess-status').className = 'status moderate';
+            } else {
+                document.getElementById('mess-status').textContent = data.mess.status === 'available' ? 'Food Available ✓' : 'Food Finished ✗';
+                document.getElementById('mess-status').className = `status ${data.mess.status === 'available' ? 'available' : 'finished'}`;
+            }
+            document.getElementById('mess-time').textContent = `Updated ${getTimeSince(data.mess.lastUpdated)}`;
+
+            // Gym
+            if (checkExpiry(data.gym.lastUpdated) || data.gym.reports.length === 0) {
+                document.getElementById('gym-status').textContent = 'No Recent Data';
+                document.getElementById('gym-status').className = 'status moderate';
+            } else {
+                const avgCount = Math.round(data.gym.reports.reduce((a, b) => a + b, 0) / data.gym.reports.length);
+                let status = avgCount <= 5 ? 'Empty' : avgCount <= 15 ? 'Moderate' : 'Crowded';
+                let statusClass = avgCount <= 5 ? 'empty' : avgCount <= 15 ? 'moderate' : 'crowded';
+                document.getElementById('gym-status').textContent = `${status} (${avgCount} people)`;
+                document.getElementById('gym-status').className = `status ${statusClass}`;
+            }
+            document.getElementById('gym-time').textContent = `Updated ${getTimeSince(data.gym.lastUpdated)}`;
+
+            // Badminton
+            if (checkExpiry(data.badminton.lastUpdated) || data.badminton.reports.length === 0) {
+                document.getElementById('badminton-status').textContent = 'No Recent Data';
+                document.getElementById('badminton-status').className = 'status moderate';
+            } else {
+                const avgOccupied = Math.round(data.badminton.reports.reduce((a, b) => a + b, 0) / data.badminton.reports.length);
+                document.getElementById('badminton-status').textContent = `${avgOccupied}/4 Courts Occupied`;
+                document.getElementById('badminton-status').className = `status ${avgOccupied === 0 ? 'empty' : avgOccupied <= 2 ? 'moderate' : 'crowded'}`;
+            }
+            document.getElementById('badminton-time').textContent = `Updated ${getTimeSince(data.badminton.lastUpdated)}`;
+        }
+
+        function openModal(type) {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modal-content');
+            const data = getData();
+            let html = '';
+
+            if (type === 'mess') {
+                const needsConfirm = data.mess.confirmations < 3;
+                html = `
+                    <div class="modal-header">🍽️ Mess Status</div>
+                    ${needsConfirm ? `<div class="confirmation-notice">Needs
