@@ -13,10 +13,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .container{max-width:1200px;margin:auto}
 h1{text-align:center;color:#fff;margin-bottom:10px}
 .live-counter{text-align:center;color:#fff;font-weight:bold;margin-bottom:25px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px}
 .card{background:#fff;padding:20px;border-radius:15px;box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer;transition:.2s}
 .card:hover{transform:translateY(-3px)}
 .status{margin-top:10px;padding:8px;border-radius:20px;text-align:center;font-weight:bold}
+.time{margin-top:6px;font-size:12px;color:#666;text-align:center}
 .green{background:#10b981;color:#fff}
 .red{background:#ef4444;color:#fff}
 .blue{background:#3b82f6;color:#fff}
@@ -26,9 +27,7 @@ button{padding:12px;border:none;border-radius:8px;font-weight:bold;cursor:pointe
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center}
 .modal-content{background:#fff;padding:25px;border-radius:15px;width:90%;max-width:400px}
 .btn-group{display:grid;gap:10px;margin-top:15px}
-.vote-note{font-size:12px;color:#666;margin-top:8px}
 input{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc}
-textarea{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #ccc}
 </style>
 </head>
 <body>
@@ -44,16 +43,31 @@ textarea{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px so
 <div class="card" onclick="openModal('mess')">
 <h3>🍽️ Mess</h3>
 <div id="mess-status" class="status orange">Loading...</div>
+<div id="mess-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('nescafe')">
+<h3>☕ Nescafé</h3>
+<div id="nescafe-status" class="status orange">Loading...</div>
+<div id="nescafe-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('nandini')">
+<h3>🥛 Nandini</h3>
+<div id="nandini-status" class="status orange">Loading...</div>
+<div id="nandini-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('gym')">
+<h3>🏋️ Gym</h3>
+<div id="gym-status" class="status orange">Loading...</div>
+<div id="gym-time" class="time"></div>
 </div>
 
 <div class="card" onclick="openModal('badminton')">
 <h3>🏸 Badminton Courts</h3>
 <div id="badminton-status" class="status orange">Loading...</div>
-</div>
-
-<div class="card" onclick="openModal('parcel')">
-<h3>📦 My Parcel</h3>
-<div id="parcel-status" class="status blue">0 Active Requests</div>
+<div id="badminton-time" class="time"></div>
 </div>
 
 </div>
@@ -79,22 +93,35 @@ firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
 // Presence
-var userRef = db.ref("presence").push();
-userRef.set(true);
-userRef.onDisconnect().remove();
-db.ref("presence").on("value", function(snap){
-  document.getElementById("liveCount").innerText = snap.numChildren();
+var presenceRef = db.ref("presence").push();
+presenceRef.set(true);
+presenceRef.onDisconnect().remove();
+db.ref("presence").on("value", s => {
+  document.getElementById("liveCount").innerText = s.numChildren();
 });
 
-// Device ID
-var deviceId = localStorage.getItem("deviceId");
-if(!deviceId){
-  deviceId = 'dev_' + Math.random().toString(36).substr(2,9);
-  localStorage.setItem("deviceId", deviceId);
+const LIMIT_WINDOW = 5 * 60 * 1000;
+const LIMIT_COUNT = 4;
+
+function rateLimit(place, callback){
+  var metaRef = db.ref(place + "_meta");
+  metaRef.transaction(function(data){
+    var now = Date.now();
+    if(!data) data = {updates:[]};
+    data.updates = (data.updates || []).filter(t => now - t < LIMIT_WINDOW);
+    if(data.updates.length >= LIMIT_COUNT) return;
+    data.updates.push(now);
+    return data;
+  }, function(error, committed){ callback(committed); });
 }
 
-const VOTE_THRESHOLD = 3;
-const MAX_DEVICE_VOTES = 3;
+function timeAgo(timestamp){
+  if(!timestamp) return "";
+  var diff = Math.floor((Date.now() - timestamp)/60000);
+  if(diff < 1) return "Updated just now";
+  if(diff === 1) return "Updated 1 minute ago";
+  return "Updated " + diff + " minutes ago";
+}
 
 function openModal(type){
   var modal=document.getElementById('modal');
@@ -102,28 +129,34 @@ function openModal(type){
   var html="";
 
   if(type==='mess'){
-    html+=`<h3>Vote Mess Status</h3>
+    html+=`<h3>Update Mess</h3>
     <div class='btn-group'>
-    <button onclick="vote('mess','available')">Food Available</button>
-    <button onclick="vote('mess','not_available')">Food Not Available</button>
+    <button onclick="updateStatus('mess','available')">Food Available</button>
+    <button onclick="updateStatus('mess','not_available')">Food Not Available</button>
+    </div>`;
+  }
+
+  if(type==='nescafe'||type==='nandini'){
+    html+=`<h3>Update ${type}</h3>
+    <div class='btn-group'>
+    <button onclick="updateStatus('${type}','open')">Open</button>
+    <button onclick="updateStatus('${type}','closed')">Closed</button>
+    </div>`;
+  }
+
+  if(type==='gym'){
+    html+=`<h3>Update Gym Count</h3>
+    <input type='number' id='gymCount'>
+    <div class='btn-group'>
+    <button onclick="updateGym()">Submit</button>
     </div>`;
   }
 
   if(type==='badminton'){
-    html+=`<h3>Badminton Courts Occupied (0-4)</h3>
-    <input type='number' id='badmintonCount' min='0' max='4' placeholder='Enter number'>
+    html+=`<h3>Badminton Courts (0-4)</h3>
+    <input type='number' id='badmintonCount' min='0' max='4'>
     <div class='btn-group'>
-    <button onclick="voteBadminton()">Submit Vote</button>
-    </div>`;
-  }
-
-  if(type==='parcel'){
-    html+=`<h3>Request Parcel Pickup</h3>
-    <input type='text' id='parcelName' placeholder='Your Name'>
-    <input type='text' id='parcelHostel' placeholder='Hostel / Block'>
-    <textarea id='parcelNote' placeholder='Optional note (Courier, time, etc)'></textarea>
-    <div class='btn-group'>
-    <button onclick="submitParcel()">Request Pickup</button>
+    <button onclick="updateBadminton()">Submit</button>
     </div>`;
   }
 
@@ -131,113 +164,65 @@ function openModal(type){
   modal.style.display='flex';
 }
 
-document.getElementById('modal').onclick=function(e){if(e.target.id==='modal')this.style.display='none'}
-
-function vote(place,value){
-  var deviceVoteRef = db.ref(place + "_deviceVotes/" + deviceId);
-
-  deviceVoteRef.transaction(function(current){
-    if((current||0) >= MAX_DEVICE_VOTES) return;
-    return (current||0) + 1;
-  }, function(error, committed){
-    if(!committed){ alert("Device vote limit reached (3 max)"); return; }
-
-    var voteRef = db.ref(place + "_votes/" + value);
-    voteRef.transaction(function(current){
-      return (current||0)+1;
-    }, function(error, committed, snapshot){
-      if(snapshot && snapshot.val() >= VOTE_THRESHOLD){
-        db.ref(place).set({status:value,timestamp:Date.now()});
-        db.ref(place + "_votes").remove();
-        db.ref(place + "_deviceVotes").remove();
-      }
-    });
+function updateStatus(place,value){
+  rateLimit(place,function(ok){
+    if(!ok){ alert("Max 4 updates in 5 mins reached"); return; }
+    db.ref(place).set({status:value,timestamp:Date.now()});
   });
-
   modal.style.display='none';
 }
 
-function voteBadminton(){
+function updateGym(){
+  var val=parseInt(document.getElementById('gymCount').value);
+  if(isNaN(val)) return alert("Enter valid number");
+  rateLimit('gym',function(ok){
+    if(!ok){ alert("Max 4 updates in 5 mins reached"); return; }
+    db.ref('gym').set({count:val,timestamp:Date.now()});
+  });
+  modal.style.display='none';
+}
+
+function updateBadminton(){
   var val=parseInt(document.getElementById('badmintonCount').value);
-  if(isNaN(val)||val<0||val>4)return alert("Enter number 0-4");
-
-  var deviceVoteRef = db.ref("badminton_deviceVotes/" + deviceId);
-
-  deviceVoteRef.transaction(function(current){
-    if((current||0) >= MAX_DEVICE_VOTES) return;
-    return (current||0)+1;
-  }, function(error, committed){
-    if(!committed){ alert("Device vote limit reached (3 max)"); return; }
-
-    var voteRef = db.ref("badminton_votes/" + val);
-    voteRef.transaction(function(current){
-      return (current||0)+1;
-    }, function(error, committed, snapshot){
-      if(snapshot && snapshot.val() >= VOTE_THRESHOLD){
-        db.ref('badminton').set({count:val,timestamp:Date.now()});
-        db.ref('badminton_votes').remove();
-        db.ref('badminton_deviceVotes').remove();
-      }
-    });
+  if(isNaN(val)||val<0||val>4) return alert("Enter 0-4");
+  rateLimit('badminton',function(ok){
+    if(!ok){ alert("Max 4 updates in 5 mins reached"); return; }
+    db.ref('badminton').set({count:val,timestamp:Date.now()});
   });
-
   modal.style.display='none';
 }
 
-function submitParcel(){
-  var name = document.getElementById('parcelName').value;
-  var hostel = document.getElementById('parcelHostel').value;
-  var note = document.getElementById('parcelNote').value;
-
-  if(!name || !hostel){
-    alert("Please enter name and hostel/block");
-    return;
-  }
-
-  db.ref('parcel_requests').push({
-    name:name,
-    hostel:hostel,
-    note:note || "",
-    timestamp:Date.now(),
-    status:"pending"
-  });
-
-  alert("Parcel request submitted!");
-  modal.style.display='none';
-}
-
-// Listeners
-function listen(place,el){
+function listen(place,statusEl,timeEl){
   db.ref(place).on('value',function(snap){
     var data=snap.val();
-    if(!data){el.innerHTML="Not Updated";el.className='status orange';return;}
+    if(!data){ statusEl.innerHTML="Not Updated"; statusEl.className='status orange'; timeEl.innerHTML=""; return; }
 
     if(place==='mess'){
-      if(data.status==='available'){
-        el.innerHTML="Food Available ✓";
-        el.className='status green';
-      }else{
-        el.innerHTML="Food Not Available ✗";
-        el.className='status red';
-      }
-      return;
+      statusEl.innerHTML = data.status==='available' ? "Food Available ✓" : "Food Not Available ✗";
+      statusEl.className = data.status==='available' ? 'status green' : 'status red';
+    }
+    else if(place==='badminton'){
+      statusEl.innerHTML = data.count + " / 4 Courts Occupied";
+      statusEl.className='status blue';
+    }
+    else if(data.status){
+      statusEl.innerHTML = data.status==='open' ? "Open ✓" : "Closed ✗";
+      statusEl.className = data.status==='open' ? 'status green' : 'status red';
+    }
+    else if(data.count!==undefined){
+      statusEl.innerHTML = data.count + " people";
+      statusEl.className='status blue';
     }
 
-    if(place==='badminton'){
-      el.innerHTML=data.count+" / 4 Courts Occupied";
-      el.className='status blue';
-    }
+    timeEl.innerHTML = timeAgo(data.timestamp);
   });
 }
 
-listen('mess',document.getElementById('mess-status'));
-listen('badminton',document.getElementById('badminton-status'));
-
-// Parcel counter
-var parcelRef = db.ref('parcel_requests');
-parcelRef.on('value', function(snapshot){
-  document.getElementById('parcel-status').innerText = snapshot.numChildren() + " Active Requests";
-});
+listen('mess',document.getElementById('mess-status'),document.getElementById('mess-time'));
+listen('nescafe',document.getElementById('nescafe-status'),document.getElementById('nescafe-time'));
+listen('nandini',document.getElementById('nandini-status'),document.getElementById('nandini-time'));
+listen('gym',document.getElementById('gym-status'),document.getElementById('gym-time'));
+listen('badminton',document.getElementById('badminton-status'),document.getElementById('badminton-time'));
 
 </script>
 
