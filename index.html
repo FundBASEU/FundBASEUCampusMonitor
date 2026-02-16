@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FundBASEU Live Tracker</title>
 
-<!-- Firebase v8 (Non-modular for GitHub Pages) -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
@@ -57,6 +56,11 @@ input{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid
 <div id="gym-status" class="status orange">Loading...</div>
 </div>
 
+<div class="card" onclick="openModal('badminton')">
+<h3>🏸 Badminton Courts</h3>
+<div id="badminton-status" class="status orange">Loading...</div>
+</div>
+
 </div>
 </div>
 
@@ -66,7 +70,6 @@ input{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid
 
 <script>
 
-// 🔥 Your Firebase Config
 var firebaseConfig = {
   apiKey: "AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
   authDomain: "fundbaseu-tracker.firebaseapp.com",
@@ -85,7 +88,14 @@ function openModal(type){
   var content=document.getElementById('modal-content');
   var html="";
 
-  if(type==='mess'||type==='nescafe'||type==='nandini'){
+  if(type==='mess'){
+    html+=`<h3>Update Mess Status</h3><div class='btn-group'>
+    <button onclick="updateMess('available')">Food Available</button>
+    <button onclick="updateMess('not_available')">Food Not Available</button>
+    </div>`;
+  }
+
+  if(type==='nescafe'||type==='nandini'){
     html+=`<h3>Update ${type}</h3><div class='btn-group'>
     <button onclick="updateStatus('${type}','open')">Open</button>
     <button onclick="updateStatus('${type}','closed')">Closed</button>
@@ -100,11 +110,24 @@ function openModal(type){
     </div>`;
   }
 
+  if(type==='badminton'){
+    html+=`<h3>Badminton Courts Occupied (0-4)</h3>
+    <input type='number' id='badmintonCount' min='0' max='4' placeholder='Enter number'>
+    <div class='btn-group'>
+    <button onclick="updateBadminton()">Submit</button>
+    </div>`;
+  }
+
   content.innerHTML=html;
   modal.style.display='flex';
 }
 
 document.getElementById('modal').onclick=function(e){if(e.target.id==='modal')this.style.display='none'}
+
+function updateMess(status){
+  db.ref('mess').set({status:status,timestamp:Date.now()});
+  document.getElementById('modal').style.display='none';
+}
 
 function updateStatus(place,status){
   db.ref(place).set({status:status,timestamp:Date.now()});
@@ -118,16 +141,40 @@ function updateGym(){
   document.getElementById('modal').style.display='none';
 }
 
+function updateBadminton(){
+  var val=parseInt(document.getElementById('badmintonCount').value);
+  if(isNaN(val)||val<0||val>4)return alert("Enter number between 0 and 4");
+  db.ref('badminton').set({count:val,timestamp:Date.now()});
+  document.getElementById('modal').style.display='none';
+}
+
 function listen(place,el){
   db.ref(place).on('value',function(snap){
     var data=snap.val();
     if(!data){el.innerHTML="Not Updated";el.className='status orange';return;}
+
+    if(place==='mess'){
+      if(data.status==='available'){
+        el.innerHTML="Food Available ✓";
+        el.className='status green';
+      }else{
+        el.innerHTML="Food Not Available ✗";
+        el.className='status red';
+      }
+      return;
+    }
+
     if(data.status==='open'){
       el.innerHTML="Open ✓";el.className='status green';
     }else if(data.status==='closed'){
       el.innerHTML="Closed ✗";el.className='status red';
     }else if(data.count!==undefined){
-      el.innerHTML=data.count+" people";el.className='status blue';
+      if(place==='badminton'){
+        el.innerHTML=data.count+" / 4 Courts Occupied";
+      }else{
+        el.innerHTML=data.count+" people";
+      }
+      el.className='status blue';
     }
   });
 }
@@ -136,6 +183,7 @@ listen('mess',document.getElementById('mess-status'));
 listen('nescafe',document.getElementById('nescafe-status'));
 listen('nandini',document.getElementById('nandini-status'));
 listen('gym',document.getElementById('gym-status'));
+listen('badminton',document.getElementById('badminton-status'));
 
 </script>
 
