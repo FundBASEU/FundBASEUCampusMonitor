@@ -22,12 +22,14 @@ h1{text-align:center;color:white}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
 .modal-content{background:white;padding:20px;border-radius:12px;width:90%;max-width:350px}
 button{padding:10px;border:none;border-radius:6px;font-weight:bold;margin-top:10px}
+.reload{position:fixed;bottom:20px;right:20px;background:#3b82f6;color:white}
 </style>
 </head>
 <body>
 
 <h1>🎓 FundBASEU Live Tracker</h1>
 <div style="text-align:center;color:white">👥 Live Users: <span id="liveCount">0</span></div>
+<button class="reload" onclick="location.reload()">Stay Updated 🔄</button>
 
 <div class="grid">
 
@@ -58,8 +60,6 @@ button{padding:10px;border:none;border-radius:6px;font-weight:bold;margin-top:10
 <div class="card" onclick="openModal('gym')">
 <h3>🏋️ Gym</h3>
 <div id="gym-status" class="status orange">Loading...</div>
-<div id="gym-votes" class="votes"></div>
-<div id="gym-pending" class="pending"></div>
 <div id="gym-time" class="time"></div>
 </div>
 
@@ -100,52 +100,77 @@ db.ref("presence").on("value",s=>{
 document.getElementById("liveCount").innerText=s.numChildren();
 });
 
-const THRESHOLD=3;
+// Device ID restriction
+var deviceId=localStorage.getItem("deviceId");
+if(!deviceId){deviceId='dev_'+Math.random().toString(36).substr(2,9);localStorage.setItem("deviceId",deviceId);}
+
+const THRESHOLD_DEFAULT=3;
+const THRESHOLD_BADMINTON=2;
 const EXPIRE_TIME=10*60*1000;
 
 function openModal(place){
 var html="<h3>Vote</h3>";
-if(place==='gym'||place==='badminton'){
-html+="<input type='number' id='val'><button onclick=vote('"+place+"',document.getElementById('val').value)>Submit</button>";
-}else{
+
+if(place==='mess'){
+html+="<button onclick=vote('mess','available')>Food Available</button>";
+html+="<button onclick=vote('mess','not_available')>Food Not Available</button>";
+}
+else if(place==='gym'){
+html+="<button onclick=updateGym('0-3')>0-3</button>";
+html+="<button onclick=updateGym('3-5')>3-5</button>";
+html+="<button onclick=updateGym('5+')>5+</button>";
+}
+else if(place==='badminton'){
+html+="<input type='number' id='val' min='0' max='4'>";
+html+="<button onclick=vote('badminton',document.getElementById('val').value)>Submit</button>";
+}
+else{
 html+="<button onclick=vote('"+place+"','yes')>Yes</button>";
 html+="<button onclick=vote('"+place+"','no')>No</button>";
 }
+
 document.getElementById('modal-content').innerHTML=html;
 document.getElementById('modal').style.display='flex';
 }
 
 function vote(place,value){
-if(!value) return alert("Enter value");
+if(!value)return alert('Enter value');
+
+// device restriction
+var deviceRef=db.ref(place+"_deviceVotes/"+deviceId);
+deviceRef.once("value",snap=>{
+if(snap.exists())return alert("You already voted.");
+
 var voteRef=db.ref(place+"_votes/"+value);
 voteRef.transaction(c=>(c||0)+1,function(e,committed,snap){
 if(!snap)return;
 var votes=snap.val();
-var remaining=THRESHOLD-votes;
+var threshold=place==='badminton'?THRESHOLD_BADMINTON:THRESHOLD_DEFAULT;
+var remaining=threshold-votes;
 
-if(votes>=THRESHOLD){
-if(place==='gym'||place==='badminton'){
+if(votes>=threshold){
+if(place==='badminton'){
 db.ref(place).set({count:parseInt(value),timestamp:Date.now()});
 }else{
 db.ref(place).set({status:value,timestamp:Date.now()});
 }
 db.ref(place+"_votes").remove();
 db.ref(place+"_pending").remove();
+db.ref(place+"_deviceVotes").remove();
 }else{
 db.ref(place+"_pending").set({message:"Awaiting confirmation from "+remaining+" more user(s)...",timestamp:Date.now()});
 }
 });
+
+deviceRef.set(true);
+});
+
 document.getElementById('modal').style.display='none';
 }
 
-function expireVotes(place){
-db.ref(place+"_pending").once("value",snap=>{
-if(!snap.val())return;
-if(Date.now()-snap.val().timestamp>EXPIRE_TIME){
-db.ref(place+"_votes").remove();
-db.ref(place+"_pending").remove();
-}
-});
+function updateGym(range){
+db.ref('gym').set({status:range,timestamp:Date.now()});
+document.getElementById('modal').style.display='none';
 }
 
 function timeAgo(ts){
@@ -157,34 +182,33 @@ return"Updated "+m+" min ago";
 
 ['mess','nescafe','nandini','gym','badminton'].forEach(place=>{
 
-// Status
 db.ref(place).on("value",snap=>{
 var d=snap.val();
 if(!d)return;
-if(place==='gym'||place==='badminton'){
-document.getElementById(place+'-status').innerHTML=d.count;
+
+if(place==='badminton'){
+document.getElementById(place+'-status').innerHTML=d.count+" courts";
 document.getElementById(place+'-status').className='status blue';
-}else{
-document.getElementById(place+'-status').innerHTML=d.status==='yes'?"Yes ✓":"No ✗";
-document.getElementById(place+'-status').className=d.status==='yes'?'status green':'status red';
 }
+else{
+document.getElementById(place+'-status').innerHTML=d.status;
+document.getElementById(place+'-status').className='status blue';
+}
+
 document.getElementById(place+'-time').innerHTML=timeAgo(d.timestamp);
 });
 
-// Votes count
+if(place!=='gym'){
 db.ref(place+"_votes").on("value",snap=>{
 var total=0;
-snap.forEach(child=>total+=child.val());
-document.getElementById(place+'-votes').innerHTML= total>0?"Votes: "+total+"/3":"";
+snap.forEach(c=>total+=c.val());
+document.getElementById(place+'-votes').innerHTML= total>0?"Votes: "+total:"";
 });
 
-// Pending message
-db.ref(place+"_pending").on("value",snap=>{
+ db.ref(place+"_pending").on("value",snap=>{
 document.getElementById(place+'-pending').innerHTML=snap.val()?snap.val().message:"";
 });
-
-// Expiry check every 30 sec
-setInterval(()=>expireVotes(place),30000);
+}
 
 });
 
