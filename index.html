@@ -43,6 +43,21 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
         }
 
+        .reset-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            z-index: 999;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -352,6 +367,8 @@
     </style>
 </head>
 <body>
+    <button class="reset-btn" onclick="resetAllData()">Reset All Data</button>
+    
     <div class="container">
         <header>
             <h1>🎓 FundBASEU Tracker</h1>
@@ -449,12 +466,17 @@
     <script>
         const AUTO_EXPIRY_TIME = 30 * 60 * 1000; // 30 minutes
 
+        function resetAllData() {
+            if (confirm('Are you sure you want to reset all data? This will clear all statuses.')) {
+                localStorage.removeItem('campusData');
+                initStorage();
+                updateDisplay();
+                alert('All data has been reset!');
+            }
+        }
+
         // Initialize storage
         function initStorage() {
-            if (localStorage.getItem('campusData')) {
-                return;
-            }
-
             const defaultData = {
                 mess: { status: null, confirmations: 0, votes: [], lastUpdated: null, confirmed: false },
                 classrooms: {},
@@ -482,7 +504,11 @@
 
         function getData() {
             const data = localStorage.getItem('campusData');
-            return data ? JSON.parse(data) : null;
+            if (!data) {
+                initStorage();
+                return JSON.parse(localStorage.getItem('campusData'));
+            }
+            return JSON.parse(data);
         }
 
         function saveData(data) {
@@ -528,7 +554,7 @@
             const gymEl = document.getElementById('gym-status');
             const gymTimeEl = document.getElementById('gym-time');
             if (gymEl && gymTimeEl) {
-                if (checkExpiry(data.gym.lastUpdated) || data.gym.reports.length === 0) {
+                if (checkExpiry(data.gym.lastUpdated) || !data.gym.reports || data.gym.reports.length === 0) {
                     gymEl.textContent = 'Not Updated - Click to Update';
                     gymEl.className = 'status not-updated';
                 } else {
@@ -543,7 +569,7 @@
             const libraryEl = document.getElementById('library-status');
             const libraryTimeEl = document.getElementById('library-time');
             if (libraryEl && libraryTimeEl) {
-                if (checkExpiry(data.library.lastUpdated) || data.library.reports.length === 0) {
+                if (checkExpiry(data.library.lastUpdated) || !data.library.reports || data.library.reports.length === 0) {
                     libraryEl.textContent = 'Not Updated - Click to Update';
                     libraryEl.className = 'status not-updated';
                 } else {
@@ -558,35 +584,35 @@
             const nescafeEl = document.getElementById('nescafe-status');
             const nescafeTimeEl = document.getElementById('nescafe-time');
             if (nescafeEl && nescafeTimeEl) {
-                if (!data.nescafe.status || checkExpiry(data.nescafe.lastUpdated)) {
+                if (!data.nescafe || !data.nescafe.status || checkExpiry(data.nescafe.lastUpdated)) {
                     nescafeEl.textContent = 'Not Updated - Click to Update';
                     nescafeEl.className = 'status not-updated';
                 } else {
                     nescafeEl.textContent = data.nescafe.status === 'open' ? 'Open ✓' : 'Closed ✗';
                     nescafeEl.className = 'status ' + (data.nescafe.status === 'open' ? 'open' : 'closed');
                 }
-                nescafeTimeEl.textContent = 'Updated ' + getTimeSince(data.nescafe.lastUpdated);
+                nescafeTimeEl.textContent = 'Updated ' + getTimeSince(data.nescafe ? data.nescafe.lastUpdated : null);
             }
 
             // Nandini
             const nandiniEl = document.getElementById('nandini-status');
             const nandiniTimeEl = document.getElementById('nandini-time');
             if (nandiniEl && nandiniTimeEl) {
-                if (!data.nandini.status || checkExpiry(data.nandini.lastUpdated)) {
+                if (!data.nandini || !data.nandini.status || checkExpiry(data.nandini.lastUpdated)) {
                     nandiniEl.textContent = 'Not Updated - Click to Update';
                     nandiniEl.className = 'status not-updated';
                 } else {
                     nandiniEl.textContent = data.nandini.status === 'open' ? 'Open ✓' : 'Closed ✗';
                     nandiniEl.className = 'status ' + (data.nandini.status === 'open' ? 'open' : 'closed');
                 }
-                nandiniTimeEl.textContent = 'Updated ' + getTimeSince(data.nandini.lastUpdated);
+                nandiniTimeEl.textContent = 'Updated ' + getTimeSince(data.nandini ? data.nandini.lastUpdated : null);
             }
 
             // Badminton
             const badmintonEl = document.getElementById('badminton-status');
             const badmintonTimeEl = document.getElementById('badminton-time');
             if (badmintonEl && badmintonTimeEl) {
-                if (checkExpiry(data.badminton.lastUpdated) || data.badminton.reports.length === 0) {
+                if (checkExpiry(data.badminton.lastUpdated) || !data.badminton.reports || data.badminton.reports.length === 0) {
                     badmintonEl.textContent = 'Not Updated - Click to Update';
                     badmintonEl.className = 'status not-updated';
                 } else {
@@ -754,6 +780,7 @@
             }
 
             const data = getData();
+            if (!data.gym.reports) data.gym.reports = [];
             data.gym.reports.push(count);
             if (data.gym.reports.length > 3) data.gym.reports.shift();
             data.gym.lastUpdated = Date.now();
@@ -771,6 +798,7 @@
             }
 
             const data = getData();
+            if (!data.library.reports) data.library.reports = [];
             data.library.reports.push(count);
             if (data.library.reports.length > 3) data.library.reports.shift();
             data.library.lastUpdated = Date.now();
@@ -782,6 +810,7 @@
 
         function updateShopStatus(shop, status) {
             const data = getData();
+            if (!data[shop]) data[shop] = {};
             data[shop].status = status;
             data[shop].lastUpdated = Date.now();
             
@@ -798,6 +827,7 @@
             }
 
             const data = getData();
+            if (!data.badminton.reports) data.badminton.reports = [];
             data.badminton.reports.push(count);
             if (data.badminton.reports.length > 3) data.badminton.reports.shift();
             data.badminton.lastUpdated = Date.now();
@@ -826,7 +856,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', function() {
-            initStorage();
+            if (!localStorage.getItem('campusData')) {
+                initStorage();
+            }
             updateDisplay();
             setInterval(updateDisplay, 30000);
         });
