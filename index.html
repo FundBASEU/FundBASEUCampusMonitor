@@ -96,7 +96,7 @@
             color: white;
         }
 
-        .status.moderate {
+        .status.moderate, .status.not-updated {
             background: #f59e0b;
             color: white;
         }
@@ -298,10 +298,6 @@
             color: #333;
         }
 
-        .password-input {
-            margin: 20px 0;
-        }
-
         @media (max-width: 768px) {
             header h1 {
                 font-size: 1.8em;
@@ -331,7 +327,7 @@
                     <span class="card-title">🍽️ Mess</span>
                     <span class="card-icon">🍛</span>
                 </div>
-                <div class="status" id="mess-status">Loading...</div>
+                <div class="status" id="mess-status">Click to update</div>
                 <div class="last-updated" id="mess-time"></div>
             </div>
 
@@ -350,7 +346,7 @@
                     <span class="card-title">🏋️ Gym</span>
                     <span class="card-icon">💪</span>
                 </div>
-                <div class="status" id="gym-status">Loading...</div>
+                <div class="status" id="gym-status">Click to update</div>
                 <div class="last-updated" id="gym-time"></div>
             </div>
 
@@ -378,7 +374,7 @@
                     <span class="card-title">🏸 Badminton</span>
                     <span class="card-icon">🎾</span>
                 </div>
-                <div class="status" id="badminton-status">Loading...</div>
+                <div class="status" id="badminton-status">Click to update</div>
                 <div class="last-updated" id="badminton-time"></div>
             </div>
 
@@ -401,30 +397,33 @@
     </div>
 
     <script>
-        const FACULTY_PASSWORD = 'baseufac';
         const AUTO_EXPIRY_TIME = 30 * 60 * 1000; // 30 minutes
 
         // Initialize storage
         function initStorage() {
+            if (localStorage.getItem('campusData')) {
+                return; // Already initialized
+            }
+
             const defaultData = {
-                mess: { status: 'available', confirmations: 0, votes: [], lastUpdated: Date.now() },
+                mess: { status: null, confirmations: 0, votes: [], lastUpdated: null, confirmed: false },
                 classrooms: {},
-                gym: { count: 0, reports: [], lastUpdated: Date.now() },
+                gym: { count: 0, reports: [], lastUpdated: null },
                 library: {
-                    ground: { count: 0, reports: [], lastUpdated: Date.now() },
-                    first: { count: 0, reports: [], lastUpdated: Date.now() }
+                    ground: { count: 0, reports: [], lastUpdated: null },
+                    first: { count: 0, reports: [], lastUpdated: null }
                 },
                 studentcentre: {
-                    nescafe: { status: 'open', confirmations: 0, votes: [], lastUpdated: Date.now() },
-                    nandini: { status: 'open', confirmations: 0, votes: [], lastUpdated: Date.now() }
+                    nescafe: { status: null, confirmations: 0, votes: [], lastUpdated: null, confirmed: false },
+                    nandini: { status: null, confirmations: 0, votes: [], lastUpdated: null, confirmed: false }
                 },
-                badminton: { occupied: 0, reports: [], lastUpdated: Date.now() },
+                badminton: { occupied: 0, reports: [], lastUpdated: null },
                 faculty: {}
             };
 
             // Initialize classrooms
             for (let i = 1; i <= 9; i++) {
-                defaultData.classrooms[`LH${i}`] = { status: 'free', confirmations: 0, votes: [], lastUpdated: Date.now() };
+                defaultData.classrooms[`LH${i}`] = { status: null, confirmations: 0, votes: [], lastUpdated: null, confirmed: false };
             }
 
             // Initialize faculty
@@ -435,13 +434,12 @@
                 defaultData.faculty[name] = { status: 'available', lastUpdated: Date.now() };
             });
 
-            if (!localStorage.getItem('campusData')) {
-                localStorage.setItem('campusData', JSON.stringify(defaultData));
-            }
+            localStorage.setItem('campusData', JSON.stringify(defaultData));
         }
 
         function getData() {
-            return JSON.parse(localStorage.getItem('campusData'));
+            const data = localStorage.getItem('campusData');
+            return data ? JSON.parse(data) : null;
         }
 
         function saveData(data) {
@@ -450,10 +448,12 @@
         }
 
         function checkExpiry(timestamp) {
+            if (!timestamp) return true;
             return Date.now() - timestamp > AUTO_EXPIRY_TIME;
         }
 
         function getTimeSince(timestamp) {
+            if (!timestamp) return 'Never updated';
             const minutes = Math.floor((Date.now() - timestamp) / 60000);
             if (minutes < 1) return 'Just now';
             if (minutes === 1) return '1 minute ago';
@@ -465,53 +465,69 @@
 
         function updateDisplay() {
             const data = getData();
+            if (!data) return;
 
             // Mess
-            if (checkExpiry(data.mess.lastUpdated)) {
-                document.getElementById('mess-status').textContent = 'Status Expired - Update Needed';
-                document.getElementById('mess-status').className = 'status moderate';
-            } else {
-                document.getElementById('mess-status').textContent = data.mess.status === 'available' ? 'Food Available ✓' : 'Food Finished ✗';
-                document.getElementById('mess-status').className = `status ${data.mess.status === 'available' ? 'available' : 'finished'}`;
+            const messEl = document.getElementById('mess-status');
+            const messTimeEl = document.getElementById('mess-time');
+            if (messEl && messTimeEl) {
+                if (!data.mess.confirmed || checkExpiry(data.mess.lastUpdated)) {
+                    messEl.textContent = 'Not Updated - Click to Update';
+                    messEl.className = 'status not-updated';
+                } else {
+                    messEl.textContent = data.mess.status === 'available' ? 'Food Available ✓' : 'Food Finished ✗';
+                    messEl.className = `status ${data.mess.status === 'available' ? 'available' : 'finished'}`;
+                }
+                messTimeEl.textContent = `Updated ${getTimeSince(data.mess.lastUpdated)}`;
             }
-            document.getElementById('mess-time').textContent = `Updated ${getTimeSince(data.mess.lastUpdated)}`;
 
             // Gym
-            if (checkExpiry(data.gym.lastUpdated) || data.gym.reports.length === 0) {
-                document.getElementById('gym-status').textContent = 'No Recent Data';
-                document.getElementById('gym-status').className = 'status moderate';
-            } else {
-                const avgCount = Math.round(data.gym.reports.reduce((a, b) => a + b, 0) / data.gym.reports.length);
-                let status = avgCount <= 5 ? 'Empty' : avgCount <= 15 ? 'Moderate' : 'Crowded';
-                let statusClass = avgCount <= 5 ? 'empty' : avgCount <= 15 ? 'moderate' : 'crowded';
-                document.getElementById('gym-status').textContent = `${status} (${avgCount} people)`;
-                document.getElementById('gym-status').className = `status ${statusClass}`;
+            const gymEl = document.getElementById('gym-status');
+            const gymTimeEl = document.getElementById('gym-time');
+            if (gymEl && gymTimeEl) {
+                if (checkExpiry(data.gym.lastUpdated) || data.gym.reports.length === 0) {
+                    gymEl.textContent = 'Not Updated - Click to Update';
+                    gymEl.className = 'status not-updated';
+                } else {
+                    const avgCount = Math.round(data.gym.reports.reduce((a, b) => a + b, 0) / data.gym.reports.length);
+                    let status = avgCount <= 5 ? 'Empty' : avgCount <= 15 ? 'Moderate' : 'Crowded';
+                    let statusClass = avgCount <= 5 ? 'empty' : avgCount <= 15 ? 'moderate' : 'crowded';
+                    gymEl.textContent = `${status} (${avgCount} people)`;
+                    gymEl.className = `status ${statusClass}`;
+                }
+                gymTimeEl.textContent = `Updated ${getTimeSince(data.gym.lastUpdated)}`;
             }
-            document.getElementById('gym-time').textContent = `Updated ${getTimeSince(data.gym.lastUpdated)}`;
 
             // Badminton
-            if (checkExpiry(data.badminton.lastUpdated) || data.badminton.reports.length === 0) {
-                document.getElementById('badminton-status').textContent = 'No Recent Data';
-                document.getElementById('badminton-status').className = 'status moderate';
-            } else {
-                const avgOccupied = Math.round(data.badminton.reports.reduce((a, b) => a + b, 0) / data.badminton.reports.length);
-                document.getElementById('badminton-status').textContent = `${avgOccupied}/4 Courts Occupied`;
-                document.getElementById('badminton-status').className = `status ${avgOccupied === 0 ? 'empty' : avgOccupied <= 2 ? 'moderate' : 'crowded'}`;
+            const badmintonEl = document.getElementById('badminton-status');
+            const badmintonTimeEl = document.getElementById('badminton-time');
+            if (badmintonEl && badmintonTimeEl) {
+                if (checkExpiry(data.badminton.lastUpdated) || data.badminton.reports.length === 0) {
+                    badmintonEl.textContent = 'Not Updated - Click to Update';
+                    badmintonEl.className = 'status not-updated';
+                } else {
+                    const avgOccupied = Math.round(data.badminton.reports.reduce((a, b) => a + b, 0) / data.badminton.reports.length);
+                    badmintonEl.textContent = `${avgOccupied}/4 Courts Occupied`;
+                    badmintonEl.className = `status ${avgOccupied === 0 ? 'empty' : avgOccupied <= 2 ? 'moderate' : 'crowded'}`;
+                }
+                badmintonTimeEl.textContent = `Updated ${getTimeSince(data.badminton.lastUpdated)}`;
             }
-            document.getElementById('badminton-time').textContent = `Updated ${getTimeSince(data.badminton.lastUpdated)}`;
         }
 
         function openModal(type) {
             const modal = document.getElementById('modal');
             const content = document.getElementById('modal-content');
             const data = getData();
+            if (!data) return;
+
             let html = '';
 
             if (type === 'mess') {
                 const needsConfirm = data.mess.confirmations < 3;
+                const currentVotes = data.mess.confirmations;
                 html = `
                     <div class="modal-header">🍽️ Mess Status</div>
-                    ${needsConfirm ? `<div class="confirmation-notice">Needs ${3 - data.mess.confirmations} more confirmation(s)</div>` : ''}
+                    ${needsConfirm ? `<div class="confirmation-notice">Current votes: ${currentVotes}/3 - Needs ${3 - currentVotes} more confirmation(s)</div>` : ''}
                     <div class="button-group">
                         <button class="btn btn-available" onclick="updateStatus('mess', 'available')">Food Available</button>
                         <button class="btn btn-finished" onclick="updateStatus('mess', 'finished')">Food Finished</button>
@@ -523,8 +539,18 @@
                 for (let i = 1; i <= 9; i++) {
                     const room = `LH${i}`;
                     const roomData = data.classrooms[room];
-                    const statusText = checkExpiry(roomData.lastUpdated) ? 'Expired' : roomData.status === 'occupied' ? 'Occupied' : 'Free';
-                    const statusClass = checkExpiry(roomData.lastUpdated) ? 'moderate' : roomData.status === 'occupied' ? 'occupied' : 'free';
+                    const isExpired = checkExpiry(roomData.lastUpdated);
+                    const isConfirmed = roomData.confirmed;
+                    
+                    let statusText, statusClass;
+                    if (!isConfirmed || isExpired) {
+                        statusText = 'Not Updated';
+                        statusClass = 'not-updated';
+                    } else {
+                        statusText = roomData.status === 'occupied' ? 'Occupied' : 'Free';
+                        statusClass = roomData.status === 'occupied' ? 'occupied' : 'free';
+                    }
+                    
                     html += `
                         <div class="sub-item" onclick="updateClassroom('${room}')">
                             <span class="sub-item-name">${room}</span>
@@ -548,9 +574,20 @@
                 ['ground', 'first'].forEach(floor => {
                     const floorData = data.library[floor];
                     const avgCount = floorData.reports.length > 0 ? Math.round(floorData.reports.reduce((a, b) => a + b, 0) / floorData.reports.length) : 0;
-                    const status = checkExpiry(floorData.lastUpdated) ? 'No Data' : avgCount <= 10 ? 'Empty' : avgCount <= 30 ? 'Moderate' : 'Crowded';
-                    const statusClass = checkExpiry(floorData.lastUpdated) ? 'moderate' : avgCount <= 10 ? 'empty' : avgCount <= 30 ? 'moderate' : 'crowded';
-                    const displayText = floorData.reports.length > 0 ? `${status} (${avgCount})` : 'No Data';
+                    const isExpired = checkExpiry(floorData.lastUpdated);
+                    const hasData = floorData.reports.length > 0;
+                    
+                    let status, statusClass, displayText;
+                    if (!hasData || isExpired) {
+                        status = 'Not Updated';
+                        statusClass = 'not-updated';
+                        displayText = 'Not Updated';
+                    } else {
+                        status = avgCount <= 10 ? 'Empty' : avgCount <= 30 ? 'Moderate' : 'Crowded';
+                        statusClass = avgCount <= 10 ? 'empty' : avgCount <= 30 ? 'moderate' : 'crowded';
+                        displayText = `${status} (${avgCount})`;
+                    }
+                    
                     html += `
                         <div class="sub-item" onclick="updateLibraryFloor('${floor}')">
                             <span class="sub-item-name">${floor === 'ground' ? 'Ground Floor' : 'First Floor'}</span>
@@ -563,8 +600,18 @@
                 html = '<div class="modal-header">☕ Student Centre</div><div class="sub-items">';
                 ['nescafe', 'nandini'].forEach(shop => {
                     const shopData = data.studentcentre[shop];
-                    const statusText = checkExpiry(shopData.lastUpdated) ? 'Expired' : shopData.status === 'open' ? 'Open' : 'Closed';
-                    const statusClass = checkExpiry(shopData.lastUpdated) ? 'moderate' : shopData.status === 'open' ? 'open' : 'closed';
+                    const isExpired = checkExpiry(shopData.lastUpdated);
+                    const isConfirmed = shopData.confirmed;
+                    
+                    let statusText, statusClass;
+                    if (!isConfirmed || isExpired) {
+                        statusText = 'Not Updated';
+                        statusClass = 'not-updated';
+                    } else {
+                        statusText = shopData.status === 'open' ? 'Open' : 'Closed';
+                        statusClass = shopData.status === 'open' ? 'open' : 'closed';
+                    }
+                    
                     html += `
                         <div class="sub-item" onclick="updateStudentCentre('${shop}')">
                             <span class="sub-item-name">${shop === 'nescafe' ? 'Nescafe' : 'Nandini'}</span>
@@ -623,6 +670,7 @@
                 data[type].confirmations = 0;
                 data[type].votes = [];
                 data[type].lastUpdated = Date.now();
+                data[type].confirmed = true;
                 alert('Status updated successfully!');
             } else {
                 alert(`Vote recorded! Need ${threshold - data[type].confirmations} more confirmation(s)`);
@@ -650,6 +698,7 @@
                 roomData.confirmations = 0;
                 roomData.votes = [];
                 roomData.lastUpdated = Date.now();
+                roomData.confirmed = true;
                 alert(`${room} status updated to ${newStatus}!`);
             } else {
                 alert(`Vote recorded for ${room}! Need ${3 - roomData.confirmations} more confirmation(s)`);
@@ -713,6 +762,7 @@
                 shopData.confirmations = 0;
                 shopData.votes = [];
                 shopData.lastUpdated = Date.now();
+                shopData.confirmed = true;
                 alert(`${shop === 'nescafe' ? 'Nescafe' : 'Nandini'} status updated!`);
             } else {
                 alert(`Vote recorded! Need ${2 - shopData.confirmations} more confirmation(s)`);
@@ -740,12 +790,6 @@
         }
 
         function updateFaculty(name) {
-            const password = prompt('Enter faculty password:');
-            if (password !== FACULTY_PASSWORD) {
-                alert('Incorrect password! Only faculty can update their status.');
-                return;
-            }
-
             const newStatus = prompt(`Update status for ${name}:\n1. Available\n2. In Class\n3. In Meeting\n4. Out of Office\n\nEnter 1-4:`);
             const statusMap = { '1': 'available', '2': 'in-class', '3': 'in-meeting', '4': 'out' };
             
@@ -763,10 +807,12 @@
             openModal('faculty');
         }
 
-        // Initialize and update display
-        initStorage();
-        updateDisplay();
-        setInterval(updateDisplay, 30000); // Update every 30 seconds
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            initStorage();
+            updateDisplay();
+            setInterval(updateDisplay, 30000); // Update every 30 seconds
+        });
 
         // Close modal when clicking outside
         document.getElementById('modal').addEventListener('click', function(e) {
