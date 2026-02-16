@@ -10,22 +10,14 @@
 
 <style>
 body{
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(135deg,#667eea,#764ba2);
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  background:linear-gradient(135deg,#667eea,#764ba2);
   margin:0;
   padding:15px;
   color:white;
 }
-h1{
-  text-align:center;
-  font-size:20px;
-  margin-bottom:5px;
-}
-.live{
-  text-align:center;
-  font-size:14px;
-  margin-bottom:15px;
-}
+h1{text-align:center;font-size:20px;margin-bottom:5px;}
+.live{text-align:center;font-size:14px;margin-bottom:15px;}
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
@@ -39,18 +31,9 @@ h1{
   box-shadow:0 4px 18px rgba(0,0,0,.25);
   cursor:pointer;
 }
-.card h3{
-  margin:0 0 6px 0;
-  font-size:15px;
-}
-.status{
-  font-weight:bold;
-  margin-top:6px;
-}
-.small{
-  font-size:11px;
-  margin-top:4px;
-}
+.card h3{margin:0 0 6px 0;font-size:15px;}
+.status{font-weight:bold;margin-top:6px;}
+.small{font-size:11px;margin-top:4px;}
 .modal{
   display:none;
   position:fixed;
@@ -109,28 +92,28 @@ button{
 <h3>🍽 Mess</h3>
 <div id="messMeal" class="status"></div>
 <div id="messMenu" class="small"></div>
-<div id="messStatus" class="small"></div>
+<div id="messStatus" class="small">Awaiting Votes</div>
 <div id="messVotes" class="small"></div>
 </div>
 
 <div class="card" onclick="openGym()">
 <h3>🏋️ Gym Crowd</h3>
-<div id="gymStatus" class="status"></div>
+<div id="gymStatus" class="status">Not Updated</div>
 </div>
 
 <div class="card" onclick="openSimple('nescafe')">
 <h3>☕ Nescafé</h3>
-<div id="nescafeStatus" class="status"></div>
+<div id="nescafeStatus" class="status">Not Updated</div>
 </div>
 
 <div class="card" onclick="openSimple('nandini')">
 <h3>🥛 Nandini</h3>
-<div id="nandiniStatus" class="status"></div>
+<div id="nandiniStatus" class="status">Not Updated</div>
 </div>
 
 <div class="card" onclick="openBadminton()">
 <h3>🏸 Badminton Courts</h3>
-<div id="badmintonStatus" class="status"></div>
+<div id="badmintonStatus" class="status">Not Updated</div>
 <div id="badmintonVotes" class="small"></div>
 </div>
 
@@ -144,7 +127,7 @@ button{
 
 <script>
 
-// Firebase Config
+// Firebase Init
 firebase.initializeApp({
 apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
 authDomain:"fundbaseu-tracker.firebaseapp.com",
@@ -168,27 +151,31 @@ if(!deviceId){
   localStorage.setItem("deviceId",deviceId);
 }
 
-const MESS_THRESHOLD=3;
-const BADMINTON_THRESHOLD=2;
-const EXPIRE=10*60*1000;
-
-// ---------- TIME + WEEK ENGINE ----------
+// ---------- TIME ENGINE ----------
 
 function getCurrentMeal(){
-  const now=new Date();
-  const h=now.getHours();
-  const m=now.getMinutes();
-  const time=h*60+m;
+  const now = new Date();
+  const minutes = now.getHours()*60 + now.getMinutes();
 
-  if(time>=450 && time<=540) return "Breakfast";
-  if(time>=750 && time<=840) return "Lunch";
-  if(time>=1020 && time<=1080) return "Snacks";
-  if(time>=1170 && time<=1260) return "Dinner";
+  const breakfastStart = 450;  // 7:30
+  const breakfastEnd   = 540;  // 9:00
+  const lunchStart     = 750;  // 12:30
+  const lunchEnd       = 840;  // 2:00
+  const snacksStart    = 1020; // 5:00
+  const snacksEnd      = 1080; // 6:00
+  const dinnerStart    = 1170; // 7:30
+  const dinnerEnd      = 1260; // 9:00
 
-  if(time<450) return "Breakfast";
-  if(time<750) return "Lunch";
-  if(time<1020) return "Snacks";
-  if(time<1170) return "Dinner";
+  if(minutes >= breakfastStart && minutes <= breakfastEnd) return "Breakfast";
+  if(minutes >= lunchStart && minutes <= lunchEnd) return "Lunch";
+  if(minutes >= snacksStart && minutes <= snacksEnd) return "Snacks";
+  if(minutes >= dinnerStart && minutes <= dinnerEnd) return "Dinner";
+
+  if(minutes < breakfastStart) return "Breakfast";
+  if(minutes < lunchStart) return "Lunch";
+  if(minutes < snacksStart) return "Snacks";
+  if(minutes < dinnerStart) return "Dinner";
+
   return "Breakfast";
 }
 
@@ -199,13 +186,14 @@ function isEvenWeek(){
   return week%2===0;
 }
 
-// Example simplified menu (can expand)
+// ---------- MENU ----------
+
 const menu={
 Breakfast:{
 odd:"Idly + Vada + Sambar + Chutney",
 even:"Millets Khichdi + Idly + Vada + Sambar"
 },
-Lunch:"Chapathi + White Rice + Dal + Veg + Curd",
+Lunch:"Chapathi + Rice + Dal + Veg + Curd",
 Snacks:"Evening Snack + Tea",
 Dinner:"Chapathi + Rice + Dal + Veg"
 };
@@ -214,29 +202,28 @@ function updateMessTile(){
   const meal=getCurrentMeal();
   const even=isEvenWeek();
   document.getElementById("messMeal").innerText=meal;
+
   if(meal==="Breakfast"){
-    document.getElementById("messMenu").innerText=even?menu.Breakfast.even:menu.Breakfast.odd;
-  }else{
+    document.getElementById("messMenu").innerText=
+    even?menu.Breakfast.even:menu.Breakfast.odd;
+  } else {
     document.getElementById("messMenu").innerText=menu[meal];
   }
 }
-
 updateMessTile();
 
 // ---------- MESS VOTING ----------
 
-function openMess(){
-  const meal=getCurrentMeal();
-  const even=isEvenWeek();
-  let menuText=(meal==="Breakfast")?(even?menu.Breakfast.even:menu.Breakfast.odd):menu[meal];
+const MESS_THRESHOLD=3;
+const EXPIRE=10*60*1000;
 
+function openMess(){
+  updateMessTile();
   document.getElementById("modalContent").innerHTML=
   "<span class='close' onclick='closeModal()'>✕</span>"+
-  "<h3>"+meal+"</h3>"+
-  "<p>"+menuText+"</p>"+
+  "<h3>Food Availability</h3>"+
   "<button onclick=\"voteMess('Food Available')\">Food Available</button>"+
   "<button onclick=\"voteMess('Food Not Available')\">Food Not Available</button>";
-
   document.getElementById("modal").style.display="flex";
 }
 
@@ -282,8 +269,12 @@ function updateGym(val){
 }
 
 db.ref("gym").on("value",snap=>{
-  if(!snap.val()) return;
-  document.getElementById("gymStatus").innerText=snap.val().status;
+  const data=snap.val();
+  if(!data||!data.status){
+    document.getElementById("gymStatus").innerText="Not Updated";
+    return;
+  }
+  document.getElementById("gymStatus").innerText=data.status;
 });
 
 // ---------- SIMPLE OPEN/CLOSE ----------
@@ -310,6 +301,8 @@ function updateSimple(place,val){
 });
 
 // ---------- BADMINTON ----------
+
+const BADMINTON_THRESHOLD=2;
 
 function openBadminton(){
   document.getElementById("modalContent").innerHTML=
