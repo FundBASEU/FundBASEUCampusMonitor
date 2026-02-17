@@ -62,8 +62,8 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 .fw-grid{display:flex;flex-direction:column;gap:9px;margin-bottom:10px;}
 .fw-card{
   border-radius:16px;padding:15px 18px;
-  cursor:pointer;border:2px solid #242438;
-  transition:background 0.35s ease,border-color 0.35s ease,box-shadow 0.35s ease,transform 0.15s;
+  cursor:pointer;border:1px solid #242438;
+  transition:background 0.4s ease,border-color 0.4s ease,box-shadow 0.4s ease,transform 0.15s;
   -webkit-tap-highlight-color:transparent;
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   background:#1a1a2e;
@@ -74,8 +74,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 .fw-icon{font-size:1.55em;line-height:1;}
 .fw-title{font-family:'Space Grotesk',sans-serif;font-size:1.05em;font-weight:800;color:#e2e8f0;}
 .fw-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
-.fw-status{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#94a3b8;}
-.fw-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.fw-sbdg{width:auto;min-width:120px;text-align:center;}
 
 .ct{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#e2e8f0;}
 .ci{font-size:1.3em;}
@@ -237,11 +236,9 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
         <span class="fw-title">Mess</span>
       </div>
       <div class="fw-right">
-        <span class="fw-status" id="mess-avail">Not Updated</span>
-        <div class="fw-meta">
-          <span class="cb cb-none" id="mess-cb">⬜ No votes yet</span>
-          <span class="vc" id="mess-vc"></span>
-        </div>
+        <span class="sbdg s-gray fw-sbdg" id="mess-avail">Not Updated</span>
+        <span class="cb cb-none" id="mess-cb">⬜ No votes yet</span>
+        <span class="vc" id="mess-vc"></span>
         <span class="tc" id="mess-ts"></span>
       </div>
     </div>
@@ -252,11 +249,9 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
         <span class="fw-title">Nandini</span>
       </div>
       <div class="fw-right">
-        <span class="fw-status" id="nandini-avail">Not Updated</span>
-        <div class="fw-meta">
-          <span class="cb cb-none" id="nandini-cb">⬜ No votes yet</span>
-          <span class="vc" id="nandini-vc"></span>
-        </div>
+        <span class="sbdg s-gray fw-sbdg" id="nandini-avail">Not Updated</span>
+        <span class="cb cb-none" id="nandini-cb">⬜ No votes yet</span>
+        <span class="vc" id="nandini-vc"></span>
         <span class="tc" id="nandini-ts"></span>
       </div>
     </div>
@@ -267,11 +262,9 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
         <span class="fw-title">Nescafé</span>
       </div>
       <div class="fw-right">
-        <span class="fw-status" id="nescafe-avail">Not Updated</span>
-        <div class="fw-meta">
-          <span class="cb cb-none" id="nescafe-cb">⬜ No votes yet</span>
-          <span class="vc" id="nescafe-vc"></span>
-        </div>
+        <span class="sbdg s-gray fw-sbdg" id="nescafe-avail">Not Updated</span>
+        <span class="cb cb-none" id="nescafe-cb">⬜ No votes yet</span>
+        <span class="vc" id="nescafe-vc"></span>
         <span class="tc" id="nescafe-ts"></span>
       </div>
     </div>
@@ -282,11 +275,9 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
         <span class="fw-title">Gym</span>
       </div>
       <div class="fw-right">
-        <span class="fw-status" id="gym-avail">Not Updated</span>
-        <div class="fw-meta">
-          <span class="cb cb-none" id="gym-cb">⬜ No votes yet</span>
-          <span class="vc" id="gym-vc"></span>
-        </div>
+        <span class="sbdg s-gray fw-sbdg" id="gym-avail">Not Updated</span>
+        <span class="cb cb-none" id="gym-cb">⬜ No votes yet</span>
+        <span class="vc" id="gym-vc"></span>
         <span class="tc" id="gym-ts"></span>
       </div>
     </div>
@@ -602,55 +593,41 @@ function listenPlace(place, thresh, onStatus){
   });
 }
 
-// ─── FULL-WIDTH TILE PAINTER ───────────────────
-function paintFW(id, colorKey){
-  var card = ge(id);
-  if(!card) return;
-  var c = CARD_COLORS[colorKey] || CARD_COLORS.dark;
-  card.style.background  = c.bg;
-  card.style.borderColor = c.border;
-  card.style.boxShadow   = "0 4px 24px "+c.glow;
-}
-function setFWStatus(elId, text, colorKey){
-  var e = ge(elId); if(!e) return;
-  var colors = {
-    green:"#6ee7b7", red:"#fca5a5", amber:"#fde68a", dark:"#94a3b8"
-  };
-  e.textContent = text;
-  e.style.color = colors[colorKey] || colors.dark;
-}
-
 // MESS
 listenPlace("mess",T_MESS,function(d){
-  if(!d){ paintFW("mess-card","dark"); setFWStatus("mess-avail","Not Updated","dark"); ge("mess-ts").textContent=""; return; }
-  if(d.status==="Food Available"){ paintFW("mess-card","green"); setFWStatus("mess-avail","✅ Food Available","green"); }
-  else { paintFW("mess-card","red"); setFWStatus("mess-avail","❌ Not Available","red"); }
-  ge("mess-ts").textContent=ago(d.ts);
+  var s=ge("mess-avail"),tEl=ge("mess-ts");
+  if(!d){ paintCard("mess-card","dark"); s.className="sbdg s-gray fw-sbdg"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+  if(d.status==="Food Available"){ paintCard("mess-card","green"); s.className="sbdg s-green fw-sbdg"; s.textContent="✅ Food Available"; }
+  else { paintCard("mess-card","red"); s.className="sbdg s-red fw-sbdg"; s.textContent="❌ Not Available"; }
+  if(tEl) tEl.textContent=ago(d.ts);
 });
 
 // NANDINI
 listenPlace("nandini",T_NANDINI,function(d){
-  if(!d){ paintFW("nandini-card","dark"); setFWStatus("nandini-avail","Not Updated","dark"); ge("nandini-ts").textContent=""; return; }
-  if(d.status==="Open"){ paintFW("nandini-card","green"); setFWStatus("nandini-avail","✅ Open","green"); }
-  else { paintFW("nandini-card","red"); setFWStatus("nandini-avail","🔒 Closed","red"); }
-  ge("nandini-ts").textContent=ago(d.ts);
+  var s=ge("nandini-avail"),tEl=ge("nandini-ts");
+  if(!d){ paintCard("nandini-card","dark"); s.className="sbdg s-gray fw-sbdg"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+  if(d.status==="Open"){ paintCard("nandini-card","green"); s.className="sbdg s-green fw-sbdg"; s.textContent="✅ Open"; }
+  else { paintCard("nandini-card","red"); s.className="sbdg s-red fw-sbdg"; s.textContent="🔒 Closed"; }
+  if(tEl) tEl.textContent=ago(d.ts);
 });
 
 // NESCAFE
 listenPlace("nescafe",T_NESCAFE,function(d){
-  if(!d){ paintFW("nescafe-card","dark"); setFWStatus("nescafe-avail","Not Updated","dark"); ge("nescafe-ts").textContent=""; return; }
-  if(d.status==="Open"){ paintFW("nescafe-card","green"); setFWStatus("nescafe-avail","✅ Open","green"); }
-  else { paintFW("nescafe-card","red"); setFWStatus("nescafe-avail","🔒 Closed","red"); }
-  ge("nescafe-ts").textContent=ago(d.ts);
+  var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
+  if(!d){ paintCard("nescafe-card","dark"); s.className="sbdg s-gray fw-sbdg"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+  if(d.status==="Open"){ paintCard("nescafe-card","green"); s.className="sbdg s-green fw-sbdg"; s.textContent="✅ Open"; }
+  else { paintCard("nescafe-card","red"); s.className="sbdg s-red fw-sbdg"; s.textContent="🔒 Closed"; }
+  if(tEl) tEl.textContent=ago(d.ts);
 });
 
 // GYM
 listenPlace("gym",T_GYM,function(d){
-  if(!d){ paintFW("gym-card","dark"); setFWStatus("gym-avail","Not Updated","dark"); ge("gym-ts").textContent=""; return; }
-  if(d.status==="Open"){ paintFW("gym-card","green"); setFWStatus("gym-avail","✅ Open","green"); }
-  else if(d.status==="Open · Crowded"){ paintFW("gym-card","amber"); setFWStatus("gym-avail","⚠️ Open · Crowded","amber"); }
-  else { paintFW("gym-card","red"); setFWStatus("gym-avail","🔒 Closed","red"); }
-  ge("gym-ts").textContent=ago(d.ts);
+  var s=ge("gym-avail"),tEl=ge("gym-ts");
+  if(!d){ paintCard("gym-card","dark"); s.className="sbdg s-gray fw-sbdg"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+  if(d.status==="Open"){ paintCard("gym-card","green"); s.className="sbdg s-green fw-sbdg"; s.textContent="✅ Open"; }
+  else if(d.status==="Open · Crowded"){ paintCard("gym-card","amber"); s.className="sbdg s-amber fw-sbdg"; s.textContent="⚠️ Open · Crowded"; }
+  else { paintCard("gym-card","red"); s.className="sbdg s-red fw-sbdg"; s.textContent="🔒 Closed"; }
+  if(tEl) tEl.textContent=ago(d.ts);
 });
 
 // BADMINTON
