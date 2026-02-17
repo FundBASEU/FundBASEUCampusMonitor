@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FundBASEU Live Tracker</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+body{font-family:sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);margin:0;padding:15px}
+h1{text-align:center;color:white;font-size:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:18px}
+.card{background:white;padding:16px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.2);cursor:pointer}
+.status{margin-top:8px;padding:6px;border-radius:18px;text-align:center;font-weight:bold;font-size:14px}
+.time,.pending,.votes{font-size:11px;text-align:center;margin-top:4px}
+.green{background:#10b981;color:white}
+.red{background:#ef4444;color:white}
+.blue{background:#3b82f6;color:white}
+.orange{background:#f59e0b;color:white}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:15px}
+.modal-content{background:white;padding:20px;border-radius:12px;width:100%;max-width:380px;position:relative}
+button{padding:12px;border:none;border-radius:8px;font-weight:bold;margin-top:10px;width:100%}
+.refresh{position:fixed;bottom:15px;right:15px;background:#3b82f6;color:white;border-radius:30px;padding:12px 16px;font-size:14px}
+.close-btn{position:absolute;top:10px;right:12px;font-size:18px;cursor:pointer}
+@media (max-width:500px){
+  h1{font-size:18px}
+  .card{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<h1>🎓 FundBASEU Live Tracker</h1>
+<div style="text-align:center;color:white;font-size:14px">👥 Live Users: <span id="liveCount">0</span></div>
+<button class="refresh" onclick="location.reload()">Refresh Live 🔄</button>
+
+<div class="grid">
+
+<div class="card" onclick="openModal('mess')">
+<h3>🍽️ Mess</h3>
+<div id="mess-status" class="status orange">Loading...</div>
+<div id="mess-votes" class="votes"></div>
+<div id="mess-pending" class="pending"></div>
+<div id="mess-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('nescafe')">
+<h3>☕ Nescafé</h3>
+<div id="nescafe-status" class="status orange">Loading...</div>
+<div id="nescafe-votes" class="votes"></div>
+<div id="nescafe-pending" class="pending"></div>
+<div id="nescafe-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('nandini')">
+<h3>🥛 Nandini</h3>
+<div id="nandini-status" class="status orange">Loading...</div>
+<div id="nandini-votes" class="votes"></div>
+<div id="nandini-pending" class="pending"></div>
+<div id="nandini-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('gym')">
+<h3>🏋️ Gym</h3>
+<div id="gym-status" class="status orange">Loading...</div>
+<div id="gym-time" class="time"></div>
+</div>
+
+<div class="card" onclick="openModal('badminton')">
+<h3>🏸 Number of Badminton Courts Available</h3>
+<div id="badminton-status" class="status orange">Loading...</div>
+<div id="badminton-votes" class="votes"></div>
+<div id="badminton-pending" class="pending"></div>
+<div id="badminton-time" class="time"></div>
+</div>
+
+</div>
+
+<div class="modal" id="modal">
+<div class="modal-content" id="modal-content">
+<span class="close-btn" onclick="closeModal()">✕</span>
+</div>
+</div>
+
+<script>
+
+// SESSION-BASED TAB LIMIT (max 2 per device)
+let sessionId = sessionStorage.getItem("sessionId");
+if(!sessionId){
+  sessionId = 'sess_' + Math.random().toString(36).substr(2,9);
+  sessionStorage.setItem("sessionId", sessionId);
+}
+
+let sessions = JSON.parse(localStorage.getItem("activeSessions") || "[]");
+if(!sessions.includes(sessionId)){
+  sessions.push(sessionId);
+  localStorage.setItem("activeSessions", JSON.stringify(sessions));
+}
+
+sessions = JSON.parse(localStorage.getItem("activeSessions") || "[]");
+if(sessions.length > 2){
+  document.body.innerHTML = "<h2 style='color:white;text-align:center'>Maximum 2 tabs allowed</h2>";
+  throw new Error("Tab limit exceeded");
+}
+
+window.addEventListener("beforeunload", () => {
+  let sessions = JSON.parse(localStorage.getItem("activeSessions") || "[]");
+  sessions = sessions.filter(id => id !== sessionId);
+  localStorage.setItem("activeSessions", JSON.stringify(sessions));
+});
+
+var firebaseConfig={
+apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
+authDomain:"fundbaseu-tracker.firebaseapp.com",
+databaseURL:"https://fundbaseu-tracker-default-rtdb.firebaseio.com",
+projectId:"fundbaseu-tracker",
+storageBucket:"fundbaseu-tracker.firebasestorage.app",
+messagingSenderId:"452144906894",
+appId:"1:452144906894:web:0e5c211b4e2e309d5f7fdf"
+};
+
+firebase.initializeApp(firebaseConfig);
+var db=firebase.database();
+
+// Presence
+var p=db.ref("presence").push();
+p.set(true);
+p.onDisconnect().remove();
+db.ref("presence").on("value",s=>{
+document.getElementById("liveCount").innerText=s.numChildren();
+});
+
+// Device restriction
+var deviceId=localStorage.getItem("deviceId");
+if(!deviceId){deviceId='dev_'+Math.random().toString(36).substr(2,9);localStorage.setItem("deviceId",deviceId);}
+
+const THRESHOLD_DEFAULT=3;
+const THRESHOLD_BADMINTON=2;
+
+function openModal(place){
+var html="<span class='close-btn' onclick='closeModal()'>✕</span><h3>Vote</h3>";
+
+if(place==='mess'){
+html+="<button onclick=vote('mess','Food Available')>Food Available</button>";
+html+="<button onclick=vote('mess','Food Not Available')>Food Not Available</button>";
+}
+else if(place==='gym'){
+html+="<button onclick=updateGym('0-3')>0-3</button>";
+html+="<button onclick=updateGym('3-5')>3-5</button>";
+html+="<button onclick=updateGym('5+')>5+</button>";
+}
+else if(place==='badminton'){
+html+="<input type='number' id='val' min='0' max='4'>";
+html+="<button onclick=vote('badminton',document.getElementById('val').value)>Submit</button>";
+}
+else{
+html+="<button onclick=vote('"+place+"','Open')>Open</button>";
+html+="<button onclick=vote('"+place+"','Closed')>Closed</button>";
+}
+
+document.getElementById('modal-content').innerHTML=html;
+document.getElementById('modal').style.display='flex';
+}
+
+function closeModal(){
+document.getElementById('modal').style.display='none';
+}
+
+function vote(place,value){
+if(!value)return alert('Enter value');
+
+var deviceRef=db.ref(place+"_deviceVotes/"+deviceId);
+deviceRef.once("value",snap=>{
+if(snap.exists())return alert("You already voted.");
+
+var voteRef=db.ref(place+"_votes/"+value);
+voteRef.transaction(c=>(c||0)+1,function(e,committed,snap){
+if(!snap)return;
+var votes=snap.val();
+var threshold=place==='badminton'?THRESHOLD_BADMINTON:THRESHOLD_DEFAULT;
+var remaining=threshold-votes;
+
+if(votes>=threshold){
+if(place==='badminton'){
+db.ref(place).set({count:parseInt(value),timestamp:Date.now()});
+}else{
+db.ref(place).set({status:value,timestamp:Date.now()});
+}
+db.ref(place+"_votes").remove();
+db.ref(place+"_pending").remove();
+db.ref(place+"_deviceVotes").remove();
+}else{
+db.ref(place+"_pending").set({message:"Awaiting confirmation from "+remaining+" more user(s)..."});
+}
+});
+
+deviceRef.set(true);
+});
+
+closeModal();
+}
+
+function updateGym(range){
+db.ref('gym').set({status:range,timestamp:Date.now()});
+closeModal();
+}
+
+function timeAgo(ts){
+if(!ts)return"";
+var m=Math.floor((Date.now()-ts)/60000);
+if(m<1)return"Updated just now";
+return"Updated "+m+" min ago";
+}
+
+['mess','nescafe','nandini','gym','badminton'].forEach(place=>{
+
+db.ref(place).on("value",snap=>{
+var d=snap.val();
+if(!d)return;
+
+if(place==='badminton'){
+document.getElementById(place+'-status').innerHTML=d.count+" courts";
+document.getElementById(place+'-status').className='status blue';
+}
+else{
+document.getElementById(place+'-status').innerHTML=d.status;
+document.getElementById(place+'-status').className='status blue';
+}
+
+document.getElementById(place+'-time').innerHTML=timeAgo(d.timestamp);
+});
+
+if(place!=='gym'){
+db.ref(place+"_votes").on("value",snap=>{
+var total=0;
+snap.forEach(c=>total+=c.val());
+document.getElementById(place+'-votes').innerHTML= total>0?"Votes: "+total:"";
+});
+
+ db.ref(place+"_pending").on("value",snap=>{
+document.getElementById(place+'-pending').innerHTML=snap.val()?snap.val().message:"";
+});
+}
+
+});
+
+</script>
+
+</body>
+</html>
