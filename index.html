@@ -8,8 +8,48 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <style>
+
+:root{
+
+  --bg-main:#0f0f1a;
+  --bg-card:#1a1a2e;
+  --bg-panel:#1e293b;
+
+  --text-main:#ffffff;
+  --text-muted:#94a3b8;
+
+  --border-main:#242438;
+  --shadow-main:0 8px 24px rgba(0,0,0,0.4);
+}
+
+body.light-theme{
+
+  --bg-main:#f8fafc;
+  --bg-card:#ffffff;
+  --bg-panel:#f1f5f9;
+
+  --text-main:#0f172a;
+  --text-muted:#64748b;
+
+  --border-main:#e2e8f0;
+  --shadow-main:0 6px 18px rgba(15,23,42,0.08);
+}
+
+/* your existing CSS continues below */
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans',sans-serif;background:#0f0f1a;min-height:100vh;padding:15px 15px 90px;color:#fff;}
+
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg-main);
+  min-height:100vh;
+  padding:15px 15px 90px;
+  color:var(--text-main);
+  transition:background 0.3s ease,color 0.3s ease;
+}
+
+
 
 header{text-align:center;margin-bottom:12px;padding-top:8px;}
 header h1{font-family:'Space Grotesk',sans-serif;font-size:1.9em;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;margin-bottom:4px;}
@@ -44,13 +84,13 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 /* ── CARD: base state + transition ── */
 .card{
   border-radius:16px;padding:14px;
-  cursor:pointer;border:1px solid #242438;
+  cursor:pointer;border:1px solid var(--border-main);
   transition:background 0.4s ease, border-color 0.4s ease, transform 0.2s, box-shadow 0.2s;
   -webkit-tap-highlight-color:transparent;
   position:relative;overflow:hidden;
-  box-shadow:0 4px 18px rgba(0,0,0,0.4);
-  /* default dark */
-  background:#1a1a2e;
+  background:var(--bg-card);
+  box-shadow:var(--shadow-main);
+
 }
 .card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.5);}
 .card:active{transform:scale(0.97);}
@@ -102,11 +142,66 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 .vc{font-size:0.65em;color:#6366f1;margin-top:2px;text-align:center;}
 
 /* ANNOUNCEMENTS */
-.ann-wrap{margin-top:10px;border:1px solid rgba(100,116,139,0.18);border-radius:14px;padding:11px 13px;background:rgba(15,10,26,0.6);}
-.ann-title{font-family:'Space Grotesk',sans-serif;font-size:0.75em;font-weight:700;color:#6b7280;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:1px;}
-.ann-card{background:rgba(255,255,255,0.03);border:1px solid rgba(100,116,139,0.15);border-radius:8px;padding:8px 10px;margin-bottom:6px;animation:fu .3s ease;}
-.ann-txt{font-size:0.82em;color:#cbd5e1;line-height:1.45;}
-.ann-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;}
+
+.ann-wrap{
+  margin-top:12px;
+  border-radius:20px;
+  padding:18px;
+
+  /* WHITE TILE STYLE (like green tile but light) */
+  background:var(--bg-panel);
+  border:1px solid var(--border-main);
+  box-shadow:var(--shadow-main);
+
+}
+
+
+.ann-card{
+  background:linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #f1f5f9 65%,
+    #e2e8f0 100%
+  );
+
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  padding:14px 16px;
+  margin-bottom:12px;
+
+  box-shadow:
+    0 6px 18px rgba(15,23,42,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+
+  transition:transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ann-card:hover{
+  transform:translateY(-2px);
+  box-shadow:
+    0 10px 26px rgba(15,23,42,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+
+.ann-title{ color:#0f172a; }
+
+.ann-txt{
+  color:#1e293b;
+  font-weight:500;
+}
+
+.ann-meta{
+  color:#64748b;
+}
+
+
+.ann-empty{
+  text-align:center;
+  color:#94a3b8;
+  font-size:0.8em;
+  padding:14px;
+}
 .ann-tag{font-size:0.62em;font-weight:700;padding:2px 7px;border-radius:8px;text-transform:uppercase;letter-spacing:0.5px;}
 .tag-mess{background:rgba(245,158,11,0.15);color:#d97706;}
 .tag-event{background:rgba(96,165,250,0.15);color:#60a5fa;}
@@ -114,7 +209,6 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 .tag-general{background:rgba(100,116,139,0.15);color:#64748b;}
 .ann-ts{font-size:0.62em;color:#3f4a58;}
 .ann-del{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.15);color:#f87171;padding:2px 7px;border-radius:5px;font-size:0.62em;cursor:pointer;font-weight:700;}
-.ann-empty{text-align:center;color:#374151;font-size:0.75em;padding:10px;}
 .ann-post-btn{display:block;margin:8px auto 0;background:transparent;border:1px solid rgba(100,116,139,0.2);color:#4b5563;padding:4px 12px;border-radius:7px;font-size:0.68em;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
 
 /* IMMEDIATE UPDATES */
@@ -192,6 +286,19 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 <div id="admin-bar" onclick="adminLogout()">🔐 Admin · tap to exit</div>
 
 <div class="container">
+  <button id="theme-toggle" style="
+  margin-top:8px;
+  padding:6px 14px;
+  border-radius:20px;
+  border:1px solid var(--border-main);
+  background:var(--bg-card);
+  color:var(--text-main);
+  font-weight:600;
+  cursor:pointer;
+  ">
+  🌙 Dark
+  </button>
+
   <header>
     <h1>🎓 FundBASEU Tracker</h1>
     <p>Real-time campus status · by students, for students</p>
@@ -208,7 +315,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
   <div class="ann-wrap" style="margin-top:10px;margin-bottom:4px;">
     <div class="ann-title">📢 Announcements <span style="font-size:0.6em;color:#6b4fa0;font-weight:400;">12hr expiry</span></div>
     <div id="ann-list"><div class="ann-empty">No announcements yet</div></div>
-    <button class="ann-post-btn" onclick="openAnnPost()">+ Post Announcement (admin only)</button>
+    <button class="ann-post-btn" onclick="openAnnPost()">+ Post Announcement </button>
   </div>
 
   <!-- NEXT MEAL BANNER -->
@@ -228,9 +335,12 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
   <div class="sec-lbl">Campus Status</div>
 
   <!-- FULL-WIDTH STATUS TILES -->
-  <div class="fw-grid">
 
-    <div class="fw-card" id="mess-card" onclick="openModal('mess')">
+
+  <!-- SMALL TILES GRID -->
+  <div class="grid">
+
+    <div class="card" id="mess-card" onclick="openModal('mess')">
       <div class="fw-left">
         <span class="fw-icon">🍽️</span>
         <span class="fw-title">Mess</span>
@@ -243,7 +353,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
       </div>
     </div>
 
-    <div class="fw-card" id="nandini-card" onclick="openModal('nandini')">
+    <div class="card" id="nandini-card" onclick="openModal('nandini')">
       <div class="fw-left">
         <span class="fw-icon">🥛</span>
         <span class="fw-title">Nandini</span>
@@ -256,7 +366,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
       </div>
     </div>
 
-    <div class="fw-card" id="nescafe-card" onclick="openModal('nescafe')">
+    <div class="card" id="nescafe-card" onclick="openModal('nescafe')">
       <div class="fw-left">
         <span class="fw-icon">☕</span>
         <span class="fw-title">Nescafé</span>
@@ -269,7 +379,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
       </div>
     </div>
 
-    <div class="fw-card" id="gym-card" onclick="openModal('gym')">
+    <div class="card" id="gym-card" onclick="openModal('gym')">
       <div class="fw-left">
         <span class="fw-icon">🏋️</span>
         <span class="fw-title">Gym</span>
@@ -281,11 +391,6 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
         <span class="tc" id="gym-ts"></span>
       </div>
     </div>
-
-  </div>
-
-  <!-- SMALL TILES GRID -->
-  <div class="grid">
 
     <div class="card" id="bad-card" onclick="openModal('bad')">
       <div class="ch"><span class="ct">🏸 Badminton</span><span class="ci">🎾</span></div>
@@ -843,7 +948,13 @@ function openModal(place){
       '<button class="mb a" onclick="doVote(\'bad\',\'1 Free\','+T_BAD+')">🟡 1 Free</button>'+
       '<button class="mb r" onclick="doVote(\'bad\',\'Full\','+T_BAD+')">🔴 All Full</button>'+
     '</div>'+
-    adminRow('bad',[{v:'4 Free',l:'All 4 Free'},{v:'Full',l:'Full'}])+
+    adminRow('bad',[
+      {v:'4 Free',l:'🟢 4 Free'},
+      {v:'3 Free',l:'🟢 3 Free'},
+      {v:'2 Free',l:'🟡 2 Free'},
+      {v:'1 Free',l:'🟡 1 Free'},
+      {v:'Full',l:'🔴 Full'}  
+    ])+
     '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
 
   } else if(place==='doc'){
@@ -1238,3 +1349,72 @@ initNotif();
   br.insertAdjacentElement('afterend', campusLink);
 })();
 </script>
+
+<script>
+let deferredPrompt;
+const installBtn = document.getElementById("install-btn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = "inline-block";
+});
+
+installBtn.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === "accepted") {
+    console.log("User installed the app");
+  }
+
+  deferredPrompt = null;
+  installBtn.style.display = "none";
+});
+
+window.addEventListener("appinstalled", () => {
+  installBtn.style.display = "none";
+});
+</script>
+
+
+<script>
+(function(){
+
+  const btn = document.getElementById("theme-toggle");
+  const body = document.body;
+
+  function setTheme(mode){
+    if(mode === "light"){
+      body.classList.add("light-theme");
+      btn.textContent = "☀️ Light";
+      localStorage.setItem("theme","light");
+    } else {
+      body.classList.remove("light-theme");
+      btn.textContent = "🌙 Dark";
+      localStorage.setItem("theme","dark");
+    }
+  }
+
+  const saved = localStorage.getItem("theme");
+  if(saved === "light"){
+    setTheme("light");
+  }
+
+  btn.addEventListener("click",function(){
+    if(body.classList.contains("light-theme")){
+      setTheme("dark");
+    } else {
+      setTheme("light");
+    }
+  });
+
+})();
+</script>
+
+
+</body>
+</html>
+
