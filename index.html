@@ -484,12 +484,23 @@ function doVote(place, value, thresh){
         if(err||!ok||!sn){ dvRef.remove(); return toast("Error voting, try again"); }
         var count=sn.val(), rem=thresh-count;
         if(count>=thresh){
-          db.ref(place).set({status:value,ts:Date.now()},function(){
-            db.ref(place+"_voteCount").remove();
-            db.ref(place+"_votedFor").remove();
-            db.ref(place+"_dv").remove();
-            db.ref(place+"_pend").remove();
-          });
+
+    // First wipe voting state fully
+    db.ref(place+"_voteCount").remove();
+    db.ref(place+"_votedFor").remove();
+    db.ref(place+"_dv").remove();
+    db.ref(place+"_pend").remove();
+
+    // Then set confirmed status
+    db.ref(place).set({
+        status:value,
+        ts:Date.now()
+    });
+
+    logAct("✅ "+thresh+"/"+thresh+" confirmed: "+place+" → "+value);
+    toast("✅ Community confirmed!");
+}
+
           logAct("✅ "+thresh+"/"+thresh+" confirmed: "+place+" → "+value);
           toast("✅ Community confirmed!");
         } else {
@@ -905,3 +916,4 @@ initNotif();
 </script>
 </body>
 </html>
+
