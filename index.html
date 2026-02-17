@@ -354,7 +354,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 //  CONFIG
 // ═══════════════════════════════════════════════
 var ADMIN_PASS = "fundbaseu2024"; // ← change this
-var T_MESS=3, T_GYM=1, T_NESCAFE=2, T_NANDINI=3, T_BAD=2, T_DOC=2, T_PROF=2;
+var T_MESS=3, T_GYM=1, T_NESCAFE=1, T_NANDINI=3, T_BAD=2, T_DOC=1, T_PROF=2;
 var HB_VOTES=5, HB_TTL=600000, IMM_DV=5, ANN_EXP=43200000;
 
 // Faculty list — 12 professors
@@ -640,13 +640,28 @@ listenPlace("doc",T_DOC,function(d){
 });
 
 // NESCAFE ON CAMPUS
+// NESCAFE
 listenPlace("nescafe",T_NESCAFE,function(d){
   var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
-  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  if(d.status==="Open"){ s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else { s.className="sbdg s-red"; s.textContent="❌ Closed"; }
+
+  if(!d){
+    s.className="sbdg s-gray";
+    s.textContent="Not Updated";
+    if(tEl) tEl.textContent="";
+    return;
+  }
+
+  if(d.status==="Open"){
+    s.className="sbdg s-green";
+    s.textContent="☕ Open";
+  } else {
+    s.className="sbdg s-red";
+    s.textContent="🔒 Closed";
+  }
+
   if(tEl) tEl.textContent=ago(d.ts);
 });
+
 
 // Suggestions
 db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numChildren()||0)+" suggestion(s)"); });
@@ -818,11 +833,11 @@ function openModal(place){
     '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
 
   } else if(place==='nescafe'){
-    h+='🏥 NESCAFE on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    h+='🏥 Nescafe on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
     h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Is the nescafe on campus? (needs '+T_NESCAFE+')</p>';
     h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'nescafe\',\'On Campus\','+T_NESCAFE+')">✅ Yes — Nescafe Open</button>'+
-      '<button class="mb r" onclick="doVote(\'nescafe\',\'Not Available\','+T_NESCAFE+')">❌ No — Closed</button>'+
+      '<button class="mb g" onclick="doVote(\'nescafe\',\'Open\','+T_NESCAFE+')">✅ Yes — Nescafe Open</button>'+
+      '<button class="mb r" onclick="doVote(\'nescafe\',\'Closed\','+T_NESCAFE+')">❌ No — Closed</button>'+
     '</div>'+
     adminRow('nescafe',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'❌ Closed'}])+
     '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
