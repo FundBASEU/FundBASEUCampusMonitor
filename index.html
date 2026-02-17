@@ -305,6 +305,15 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
       <div class="tc" id="doc-ts"></div>
     </div>
 
+    <div class="card" id="nescafe-card" onclick="openModal('nescafe')">
+      <div class="ch"><span class="ct">🏥 Nescafe</span><span class="ci">💊</span></div>
+      <span class="sbdg s-gray" id="nescafe-avail">Not Updated</span>
+      <div class="cb cb-none" id="nescafe-cb">⬜ No votes yet</div>
+      <div class="vc" id="nescafe-vc"></div>
+      <div class="vc" id="nescafe-pend"></div>
+      <div class="tc" id="nescafe-ts"></div>
+    </div>
+
     <div class="card" onclick="openFacultyLocator()">
       <div class="ch"><span class="ct">👤 Faculty</span><span class="ci">🎓</span></div>
       <span class="sbdg s-purple">Faculty Locator</span>
@@ -358,7 +367,7 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 //  CONFIG
 // ═══════════════════════════════════════════════
 var ADMIN_PASS = "fundbaseu2024"; // ← change this
-var T_MESS=3, T_GYM=1, T_NESCAFE=3, T_NANDINI=3, T_BAD=2, T_DOC=2, T_PROF=2;
+var T_MESS=3, T_GYM=1, T_NESCAFE=2, T_NANDINI=3, T_BAD=2, T_DOC=2, T_PROF=2;
 var HB_VOTES=5, HB_TTL=600000, IMM_DV=5, ANN_EXP=43200000;
 
 // Faculty list — 12 professors
@@ -651,6 +660,15 @@ listenPlace("doc",T_DOC,function(d){
   if(tEl) tEl.textContent=ago(d.ts);
 });
 
+// NESCAFE ON CAMPUS
+listenPlace("nescafe",T_NESCAFE,function(d){
+  var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
+  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+  if(d.status==="On Campus"){ s.className="sbdg s-green"; s.textContent="✅ On Campus"; }
+  else { s.className="sbdg s-red"; s.textContent="❌ Not Available"; }
+  if(tEl) tEl.textContent=ago(d.ts);
+});
+
 // Suggestions
 db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numChildren()||0)+" suggestion(s)"); });
 
@@ -828,6 +846,17 @@ function openModal(place){
     '</div>'+
     adminRow('doc',[{v:'On Campus',l:'✅ On Campus'},{v:'Not Available',l:'❌ Not Available'}])+
     '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+
+  } else if(place==='nescafe'){
+    h+='🏥 NESCAFE on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Is the nescafe on campus? (needs '+T_NESCAFE+')</p>';
+    h+='<div class="bst">'+
+      '<button class="mb g" onclick="doVote(\'nescafe\',\'On Campus\','+T_NESCAFE+')">✅ Yes — Nescafe on Campus</button>'+
+      '<button class="mb r" onclick="doVote(\'nescafe\',\'Not Available\','+T_NESCAFE+')">❌ No — Not Available</button>'+
+    '</div>'+
+    adminRow('nescafe',[{v:'On Campus',l:'✅ On Campus'},{v:'Not Available',l:'❌ Not Available'}])+
+    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+
 
   } else if(place==='sug'){
     h+='💡 Suggestions</span><button class="mx" onclick="closeModal()">✕</button></div>';
