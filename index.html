@@ -1,967 +1,1959 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FundBASEU Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans',sans-serif;background:#0f0f1a;min-height:100vh;padding:15px 15px 90px;color:#fff;}
-
-header{text-align:center;margin-bottom:12px;padding-top:8px;}
-header h1{font-family:'Space Grotesk',sans-serif;font-size:1.9em;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;margin-bottom:4px;}
-header p{font-size:0.8em;color:#666;margin-bottom:8px;}
-.upd-link{display:inline-block;background:rgba(167,139,250,0.15);padding:6px 14px;border-radius:20px;color:#a78bfa;text-decoration:none;font-size:0.8em;font-weight:600;border:1px solid rgba(167,139,250,0.3);}
-
-#admin-bar{display:none;position:fixed;top:10px;right:10px;background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#f87171;padding:4px 12px;border-radius:20px;font-size:0.7em;font-weight:700;z-index:600;cursor:pointer;}
-#admin-bar.show{display:block;}
-
-.notif-banner{display:none;background:linear-gradient(135deg,#1e1b4b,#1e3a5f);border:1px solid #4f46e5;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:0.8em;color:#a5b4fc;align-items:center;gap:10px;flex-wrap:wrap;}
-.notif-banner.show{display:flex;}
-.notif-btn{background:#4f46e5;border:none;color:white;padding:6px 14px;border-radius:8px;font-size:0.82em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
-
-.ticker-wrap{background:#12121f;border:1px solid #1e1e35;border-radius:12px;padding:7px 12px;margin:10px 0;display:flex;align-items:center;gap:10px;overflow:hidden;}
-.ticker-live{font-family:'Space Grotesk',sans-serif;font-size:0.62em;font-weight:800;color:#ef4444;letter-spacing:1.5px;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;}
-.ldot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:blink 1s infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.ticker-vp{flex:1;overflow:hidden;}
-.ticker-tr{display:flex;white-space:nowrap;animation:tickanim 30s linear infinite;}
-.ticker-tr:hover{animation-play-state:paused;}
-@keyframes tickanim{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.ti{font-size:0.75em;color:#64748b;padding-right:40px;}
-.ti b{color:#94a3b8;font-weight:500;}
-
-.stats-bar{display:flex;justify-content:center;gap:28px;margin:12px 0;flex-wrap:wrap;}
-.s-box{text-align:center;}
-.s-num{font-family:'Space Grotesk',sans-serif;font-size:1.7em;font-weight:800;display:block;color:#fff;}
-.s-lbl{font-size:0.72em;color:#555;}
-
-.sec-lbl{font-family:'Space Grotesk',sans-serif;font-size:0.65em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#444;margin:14px 0 8px 2px;}
-
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:6px;}
-
-/* ── CARD: base state + transition ── */
-.card{
-  border-radius:16px;padding:14px;
-  cursor:pointer;border:1px solid #242438;
-  transition:background 0.4s ease, border-color 0.4s ease, transform 0.2s, box-shadow 0.2s;
-  -webkit-tap-highlight-color:transparent;
-  position:relative;overflow:hidden;
-  box-shadow:0 4px 18px rgba(0,0,0,0.4);
-  /* default dark */
-  background:#1a1a2e;
-}
-.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.5);}
-.card:active{transform:scale(0.97);}
-
-/* ── CARD COLOR STATES (applied via JS .style directly) ── */
-/* These are templates used by JS — no class switching needed */
-
-.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
-.ct{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#e2e8f0;}
-.ci{font-size:1.3em;}
-
-/* Status badge inside card */
-.sbdg{display:block;padding:5px 10px;border-radius:20px;font-size:0.76em;font-weight:700;margin:3px 0;text-align:center;width:100%;transition:background 0.3s,color 0.3s,border-color 0.3s;}
-
-/* Explicit colour variants — set via JS className */
-.s-green{background:rgba(16,185,129,0.25);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4);}
-.s-red{background:rgba(239,68,68,0.25);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);}
-.s-amber{background:rgba(245,158,11,0.25);color:#fde68a;border:1px solid rgba(245,158,11,0.4);}
-.s-blue{background:rgba(96,165,250,0.25);color:#bfdbfe;border:1px solid rgba(96,165,250,0.4);}
-.s-gray{background:rgba(100,116,139,0.2);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);}
-.s-purple{background:rgba(167,139,250,0.2);color:#ddd6fe;border:1px solid rgba(167,139,250,0.3);}
-.s-teal{background:rgba(20,184,166,0.25);color:#99f6e4;border:1px solid rgba(20,184,166,0.4);}
-
-/* Community confirmation badge */
-.cb{display:inline-flex;align-items:center;gap:4px;font-size:0.67em;font-weight:700;margin-top:5px;padding:3px 9px;border-radius:7px;}
-.cb-ok{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
-.cb-wait{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);}
-.cb-none{background:rgba(100,116,139,0.12);color:#4b5563;border:1px solid rgba(100,116,139,0.2);}
-
-.mc{font-size:0.7em;color:#94a3b8;margin-top:5px;background:rgba(255,255,255,0.04);padding:5px 8px;border-radius:8px;line-height:1.45;}
-.tc{font-size:0.65em;color:#444;margin-top:5px;text-align:center;}
-.vc{font-size:0.65em;color:#6366f1;margin-top:2px;text-align:center;}
-
-/* ANNOUNCEMENTS */
-.ann-wrap{margin-top:14px;border:1px solid rgba(167,139,250,0.22);border-radius:18px;padding:14px;background:#0f0a1a;}
-.ann-title{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#a78bfa;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
-.ann-card{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.18);border-radius:10px;padding:10px 12px;margin-bottom:8px;animation:fu .3s ease;}
-.ann-txt{font-size:0.85em;color:#e2e8f0;line-height:1.45;}
-.ann-meta{display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;}
-.ann-tag{font-size:0.65em;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;}
-.tag-mess{background:rgba(245,158,11,0.2);color:#fbbf24;}
-.tag-event{background:rgba(96,165,250,0.2);color:#93c5fd;}
-.tag-academic{background:rgba(16,185,129,0.2);color:#34d399;}
-.tag-general{background:rgba(167,139,250,0.2);color:#c4b5fd;}
-.ann-ts{font-size:0.65em;color:#555;}
-.ann-del{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.65em;cursor:pointer;font-weight:700;}
-.ann-empty{text-align:center;color:#444;font-size:0.8em;padding:14px;}
-.ann-post-btn{display:block;margin:12px auto 0;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.22);color:#a78bfa;padding:5px 14px;border-radius:8px;font-size:0.72em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
-
-/* IMMEDIATE UPDATES */
-.imm-wrap{margin-top:14px;border:1px solid rgba(245,158,11,0.22);border-radius:18px;padding:14px;background:#130f00;}
-.imm-title{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#fbbf24;margin-bottom:10px;}
-.imm-card{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:9px 11px;margin-bottom:8px;font-size:0.82em;color:#fde68a;line-height:1.45;animation:fu .3s ease;}
-.imm-meta{font-size:0.65em;color:#78350f;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.dv-btn{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.7em;cursor:pointer;font-weight:700;}
-
-/* HEARTBEAT */
-.hb-wrap{margin-top:14px;border:1px solid rgba(255,77,109,0.22);border-radius:18px;padding:14px;background:#150009;position:relative;overflow:hidden;}
-.hb-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ff4d6d,#ff758c,#ff4d6d);background-size:200%;animation:shimmer 2s infinite;}
-@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
-.hb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.hb-tit{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#ff4d6d;display:flex;align-items:center;gap:6px;}
-.pdot{width:8px;height:8px;border-radius:50%;background:#ff4d6d;animation:pulse 1.2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
-.hb-rules{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.18);border-radius:10px;padding:9px 11px;margin:8px 0;font-size:0.72em;color:#fca5a5;line-height:1.7;}
-.hb-rules strong{color:#ff4d6d;display:block;margin-bottom:3px;font-family:'Space Grotesk',sans-serif;}
-.hb-row{display:flex;gap:8px;margin:8px 0 2px;}
-.hb-in{flex:1;background:rgba(255,255,255,0.06);border:1px solid #2a1520;border-radius:10px;padding:9px 11px;color:white;font-size:0.82em;font-family:'DM Sans',sans-serif;outline:none;}
-.hb-in:focus{border-color:#ff4d6d;}
-.hb-in::placeholder{color:#4a2530;}
-.chct{font-size:0.65em;color:#4a2530;text-align:right;margin-bottom:6px;}
-.chct.warn{color:#f59e0b;}
-.btn-hb{background:#ff4d6d;color:white;border:none;border-radius:10px;padding:9px 13px;font-weight:700;font-size:0.82em;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap;}
-.hb-feed{display:flex;flex-direction:column;gap:7px;margin-top:8px;max-height:280px;overflow-y:auto;}
-.hb-card{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.18);border-radius:10px;padding:9px 11px;display:flex;gap:10px;align-items:center;animation:fu .3s ease;}
-@keyframes fu{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.hb-txt{font-size:0.82em;color:#fca5a5;flex:1;line-height:1.4;}
-.hb-r{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:42px;}
-.uv-btn{background:rgba(255,77,109,0.15);border:1px solid rgba(255,77,109,0.28);color:#ff4d6d;border-radius:8px;padding:4px 7px;font-size:0.75em;font-weight:700;cursor:pointer;width:100%;text-align:center;}
-.uv-btn.voted{opacity:0.45;cursor:default;}
-.tbar{height:2px;background:rgba(255,77,109,0.12);border-radius:2px;margin-top:5px;overflow:hidden;}
-.tfil{height:100%;background:#ff4d6d;border-radius:2px;transition:width 1s linear;}
-.hb-empty{text-align:center;color:#4a2530;font-size:0.78em;padding:16px;}
-
-/* MODAL */
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:flex-end;justify-content:center;}
-.modal.active{display:flex;}
-.mbox{background:#1a1a2e;border-radius:24px 24px 0 0;padding:22px 18px 36px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid #2a2a3e;border-bottom:none;animation:su .28s ease;}
-@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.mh{font-family:'Space Grotesk',sans-serif;font-size:1.2em;font-weight:800;color:#e2e8f0;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
-.mx{background:rgba(255,255,255,0.08);border:none;color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.9em;}
-.bst{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
-.mb{padding:13px;border:none;border-radius:11px;font-size:0.92em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
-.mb:active{opacity:0.85;}
-.mb.g{background:#10b981;color:white;}
-.mb.r{background:#ef4444;color:white;}
-.mb.a{background:#f59e0b;color:white;}
-.mb.t{background:#0d9488;color:white;}
-.mb.x{background:#1f2937;color:#6b7280;margin-top:6px;}
-.mi{width:100%;background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;border-radius:10px;padding:11px;color:white;font-size:0.88em;font-family:'DM Sans',sans-serif;outline:none;margin-top:8px;}
-.mi:focus{border-color:#a78bfa;}
-.msel{width:100%;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:10px;padding:11px;color:white;font-size:0.88em;font-family:'DM Sans',sans-serif;outline:none;margin-top:8px;}
-.adm-sec{margin-top:14px;padding-top:12px;border-top:1px solid rgba(239,68,68,0.2);}
-.adm-lbl{font-size:0.72em;color:#ef4444;font-weight:700;margin-bottom:8px;}
-.adm-row{display:flex;flex-wrap:wrap;gap:8px;}
-.adm-btn{flex:1;min-width:80px;padding:9px 8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;border-radius:9px;font-size:0.8em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;text-align:center;}
-
-.ref-btn{position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:30px;padding:11px 17px;font-size:0.82em;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(102,126,234,0.4);z-index:999;font-family:'Space Grotesk',sans-serif;}
-
-#toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;padding:9px 18px;border-radius:12px;font-size:0.82em;z-index:9999;border:1px solid #334155;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;max-width:92vw;text-align:center;}
-
-@media(max-width:480px){
-  header h1{font-size:1.55em;}
-  .grid{grid-template-columns:1fr 1fr;gap:9px;}
-  .card{padding:11px;}
-  .ct{font-size:0.82em;}
-}
-</style>
-</head>
-<body>
-<div id="toast"></div>
-<div id="admin-bar" onclick="adminLogout()">🔐 Admin · tap to exit</div>
-
-<div class="container">
-  <header>
-    <h1>🎓 FundBASEU Tracker</h1>
-    <p>Real-time campus status · by students, for students</p>
-    <a href="https://sway.cloud.microsoft/CuEoSACHmG0wvSfR?ref=Link&loc=play" target="_blank" class="upd-link">📢 FundBASEU Updates →</a>
-  </header>
-
-  <div class="notif-banner" id="notif-banner">
-    <div style="flex:1;">🔔 Get meal reminders at 7:30am · 12:30pm · 5pm · 7:30pm
-    <div id="notif-st" style="font-size:0.72em;color:#818cf8;margin-top:3px;"></div></div>
-    <button class="notif-btn" id="notif-btn" onclick="reqNotif()">Enable</button>
-  </div>
-
-  <div class="ticker-wrap">
-    <div class="ticker-live"><div class="ldot"></div>LIVE</div>
-    <div class="ticker-vp"><div class="ticker-tr" id="ttrack"><span class="ti"><b>No activity yet...</b></span><span class="ti"><b>No activity yet...</b></span></div></div>
-  </div>
-
-  <div class="stats-bar">
-    <div class="s-box"><span class="s-num" id="liveCount">0</span><span class="s-lbl">👥 Live Now</span></div>
-    <div class="s-box"><span class="s-num" id="totalVis">0</span><span class="s-lbl">📊 Visitors</span></div>
-  </div>
-
-  <div class="sec-lbl">Campus Status</div>
-  <div class="grid">
-
-    <div class="card" id="mess-card" onclick="openModal('mess')">
-      <div class="ch"><span class="ct">🍽️ Mess</span><span class="ci">🍛</span></div>
-      <span class="sbdg s-gray" id="mess-avail">Not Updated</span>
-      <div class="cb cb-none" id="mess-cb">⬜ No votes yet</div>
-      <span class="sbdg s-blue" id="mess-meal" style="margin-top:5px;"></span>
-      <div class="mc" id="mess-menu"></div>
-      <div class="vc" id="mess-vc"></div>
-      <div class="vc" id="mess-pend"></div>
-      <div class="tc" id="mess-ts"></div>
-    </div>
-
-    <div class="card" id="gym-card" onclick="openModal('gym')">
-      <div class="ch"><span class="ct">🏋️ Gym</span><span class="ci">💪</span></div>
-      <span class="sbdg s-gray" id="gym-status">Not Updated</span>
-      <div class="cb cb-none" id="gym-cb">⬜ No votes yet</div>
-      <div class="tc" id="gym-ts"></div>
-    </div>
-
-    <div class="card" id="nescafe-card" onclick="openModal('nescafe')">
-      <div class="ch"><span class="ct">☕ Nescafé</span><span class="ci">🥤</span></div>
-      <span class="sbdg s-gray" id="nescafe-avail">Not Updated</span>
-      <div class="cb cb-none" id="nescafe-cb">⬜ No votes yet</div>
-      <div class="vc" id="nescafe-vc"></div>
-      <div class="vc" id="nescafe-pend"></div>
-      <div class="tc" id="nescafe-ts"></div>
-    </div>
-
-    <div class="card" id="nandini-card" onclick="openModal('nandini')">
-      <div class="ch"><span class="ct">🥛 Nandini</span><span class="ci">🧃</span></div>
-      <span class="sbdg s-gray" id="nandini-avail">Not Updated</span>
-      <div class="cb cb-none" id="nandini-cb">⬜ No votes yet</div>
-      <div class="vc" id="nandini-vc"></div>
-      <div class="vc" id="nandini-pend"></div>
-      <div class="tc" id="nandini-ts"></div>
-    </div>
-
-    <div class="card" id="bad-card" onclick="openModal('bad')">
-      <div class="ch"><span class="ct">🏸 Badminton</span><span class="ci">🎾</span></div>
-      <span class="sbdg s-gray" id="bad-avail">Not Updated</span>
-      <div class="cb cb-none" id="bad-cb">⬜ No votes yet</div>
-      <div class="vc" id="bad-vc"></div>
-      <div class="vc" id="bad-pend"></div>
-      <div class="tc" id="bad-ts"></div>
-    </div>
-
-    <div class="card" id="doc-card" onclick="openModal('doc')">
-      <div class="ch"><span class="ct">🏥 Doctor</span><span class="ci">💊</span></div>
-      <span class="sbdg s-gray" id="doc-avail">Not Updated</span>
-      <div class="cb cb-none" id="doc-cb">⬜ No votes yet</div>
-      <div class="vc" id="doc-vc"></div>
-      <div class="vc" id="doc-pend"></div>
-      <div class="tc" id="doc-ts"></div>
-    </div>
-
-    <div class="card" onclick="openModal('sug')">
-      <div class="ch"><span class="ct">💡 Suggest</span><span class="ci">📝</span></div>
-      <span class="sbdg s-purple">Fixes & Ideas</span>
-      <div class="tc" id="sug-count"></div>
-    </div>
-
-  </div>
-
-  <!-- FACULTY SECTION -->
-  <div class="sec-lbl">Faculty Locator</div>
-  <div class="grid" id="faculty-grid">
-    <!-- rendered by JS -->
-  </div>
-
-  <!-- ANNOUNCEMENTS -->
-  <div class="ann-wrap">
-    <div class="ann-title">📢 Announcements <span style="font-size:0.6em;color:#6b4fa0;font-weight:400;">12hr expiry</span></div>
-    <div id="ann-list"><div class="ann-empty">No announcements yet</div></div>
-    <button class="ann-post-btn" onclick="openAnnPost()">+ Post Announcement (admin only)</button>
-  </div>
-
-  <!-- IMMEDIATE UPDATES -->
-  <div class="imm-wrap" id="imm-wrap" style="display:none;">
-    <div class="imm-title">🔴 Immediate Updates <span style="font-size:0.6em;color:#78350f;font-weight:400;margin-left:4px;">5 downvotes = removed</span></div>
-    <div id="imm-list"></div>
-  </div>
-
-  <!-- HEARTBEAT ZONE -->
-  <div class="hb-wrap">
-    <div class="hb-head">
-      <div class="hb-tit"><div class="pdot"></div>Heartbeat Zone</div>
-      <span style="font-size:0.68em;color:#7f3040;">anonymous · incubation</span>
-    </div>
-    <div class="hb-rules">
-      <strong>📋 How Heartbeat works:</strong>
-      • Post anonymously — max 80 characters<br>
-      • <strong style="color:#ff758c;">5 upvotes</strong> → graduates to 🔴 Immediate Updates<br>
-      • <strong style="color:#ff758c;">Auto-deletes in 10 min</strong> if under 5 upvotes<br>
-      • Use for urgent signals, crowd alerts, campus sightings
-    </div>
-    <div class="hb-row">
-      <input class="hb-in" id="hb-txt" maxlength="80" placeholder="What's happening right now..." oninput="updateCC()">
-      <button class="btn-hb" onclick="postHB()">Post</button>
-    </div>
-    <div class="chct" id="chct">0 / 80</div>
-    <div class="hb-feed" id="hb-feed"><div class="hb-empty">No active posts · be the first</div></div>
-  </div>
-</div>
-
-<button class="ref-btn" onclick="location.reload()">🔄 Refresh</button>
-
-<div class="modal" id="modal" onclick="bgClose(event)">
-  <div class="mbox" id="mbox"></div>
-</div>
-
-<script>
-// ═══════════════════════════════════════════════
-//  CONFIG
-// ═══════════════════════════════════════════════
-var ADMIN_PASS = "fundbaseu2024"; // ← change this
-var T_MESS=3, T_GYM=1, T_NESCAFE=3, T_NANDINI=3, T_BAD=2, T_DOC=2, T_PROF=2;
-var HB_VOTES=5, HB_TTL=600000, IMM_DV=5, ANN_EXP=43200000;
-
-// Faculty list — 12 professors
-var FACULTY = [
-  "Dr.Bidur",
-  "Dr.Megha",
-  "Dr.Irfan",
-  "Dr.Shameer",
-  "Dr.Nageshwar",
-  "Dr.Ishfaq",
-  "Dr.Muzaffar",
-  "Dr.Kasturi",
-  "Dr.Moushmi",
-  "Dr.Sushmita",
-  "Dean",
-  "Dr.Asha"
-];
-
-// ═══════════════════════════════════════════════
-//  FIREBASE
-// ═══════════════════════════════════════════════
-firebase.initializeApp({
-  apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
-  authDomain:"fundbaseu-tracker.firebaseapp.com",
-  databaseURL:"https://fundbaseu-tracker-default-rtdb.firebaseio.com",
-  projectId:"fundbaseu-tracker"
-});
-var db = firebase.database();
-
-var pr = db.ref("presence").push();
-pr.set(true); pr.onDisconnect().remove();
-db.ref("presence").on("value",function(s){ setText("liveCount",s.numChildren()); });
-db.ref("totalVisitors").transaction(function(c){ return (c||0)+1; });
-db.ref("totalVisitors").on("value",function(s){ setText("totalVis",s.val()||0); });
-
-var devId = localStorage.getItem("did") || (function(){ var id="d_"+Math.random().toString(36).slice(2,11); localStorage.setItem("did",id); return id; })();
-
-// ═══════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════
-function ge(id){ return document.getElementById(id); }
-function setText(id,v){ var e=ge(id); if(e) e.textContent=v; }
-function ago(t){ if(!t) return ""; var m=Math.floor((Date.now()-t)/60000); if(m<1) return "just now"; if(m===1) return "1m ago"; if(m<60) return m+"m ago"; var h=Math.floor(m/60); if(h<24) return h+"hr ago"; return Math.floor(h/24)+"d ago"; }
-function ts(t){ if(!t) return ""; var d=new Date(t); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
-function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-function toast(msg){ var t=ge("toast"); t.textContent=msg; t.style.opacity="1"; clearTimeout(t._x); t._x=setTimeout(function(){ t.style.opacity="0"; },2800); }
-
-// ═══════════════════════════════════════════════
-//  CARD COLOR — applied directly via style + border
-//  This bypasses ALL CSS specificity issues
-// ═══════════════════════════════════════════════
-var CARD_COLORS = {
-  green:  { bg:"linear-gradient(135deg,#052e16,#064e3b)", border:"#10b981", glow:"rgba(16,185,129,0.3)" },
-  red:    { bg:"linear-gradient(135deg,#450a0a,#7f1d1d)", border:"#ef4444", glow:"rgba(239,68,68,0.3)" },
-  amber:  { bg:"linear-gradient(135deg,#451a03,#78350f)", border:"#f59e0b", glow:"rgba(245,158,11,0.3)" },
-  teal:   { bg:"linear-gradient(135deg,#042f2e,#134e4a)", border:"#14b8a6", glow:"rgba(20,184,166,0.3)" },
-  blue:   { bg:"linear-gradient(135deg,#0c1a4a,#1e3a8a)", border:"#3b82f6", glow:"rgba(59,130,246,0.3)" },
-  purple: { bg:"linear-gradient(135deg,#1e1b4b,#312e81)", border:"#818cf8", glow:"rgba(129,140,248,0.3)" },
-  dark:   { bg:"#1a1a2e",                                border:"#242438", glow:"none" }
-};
-
-function paintCard(id, colorKey){
-  var card = ge(id);
-  if (!card) return;
-
-  var c = CARD_COLORS[colorKey] || CARD_COLORS.dark;
-
-  card.style.setProperty("background", c.bg, "important");
-  card.style.setProperty("border-color", c.border, "important");
-  card.style.setProperty("box-shadow", "0 6px 25px " + c.glow, "important");
-}
-
-
-// ═══════════════════════════════════════════════
-//  COMMUNITY BADGE
-// ═══════════════════════════════════════════════
-function setCB(id, votes, done, thresh){
-  var e = ge(id+"-cb"); if(!e) return;
-  if(done){ e.className="cb cb-ok"; e.textContent="✅ Community Confirmed"; }
-  else if(votes>=1){ e.className="cb cb-wait"; e.textContent="⚠️ Awaiting ("+votes+"/"+(thresh||3)+")"; }
-  else{ e.className="cb cb-none"; e.textContent="⬜ No votes yet"; }
-}
-
-// ═══════════════════════════════════════════════
-//  ADMIN
-// ═══════════════════════════════════════════════
-var isAdmin = sessionStorage.getItem("adm")==="1";
-if(isAdmin) ge("admin-bar").classList.add("show");
-
-function checkAdmin(){
-  if(isAdmin) return true;
-  var pw=prompt("🔐 Admin password:");
-  if(pw===ADMIN_PASS){ isAdmin=true; sessionStorage.setItem("adm","1"); ge("admin-bar").classList.add("show"); toast("🔐 Admin access granted"); return true; }
-  toast("❌ Wrong password"); return false;
-}
-function adminLogout(){ if(!confirm("Exit admin?")) return; isAdmin=false; sessionStorage.removeItem("adm"); ge("admin-bar").classList.remove("show"); toast("Logged out"); }
-
-// ═══════════════════════════════════════════════
-//  NOTIFICATIONS
-// ═══════════════════════════════════════════════
-var nOn=false, lnk="";
-function initNotif(){
-  if(!("Notification" in window)) return;
-  if(Notification.permission==="granted"){ ge("notif-banner").style.display="none"; startNotif(); }
-  else if(Notification.permission==="default") ge("notif-banner").classList.add("show");
-}
-function reqNotif(){
-  ge("notif-btn").textContent="...";
-  Notification.requestPermission().then(function(p){
-    if(p==="granted"){ ge("notif-banner").classList.remove("show"); startNotif(); toast("🔔 Meal reminders on!"); }
-    else{ ge("notif-st").textContent="Denied — enable in browser settings"; ge("notif-btn").textContent="Enable"; }
-  });
-}
-function startNotif(){ if(nOn) return; nOn=true; chkMeal(); setInterval(chkMeal,60000); }
-function chkMeal(){
-  if(Notification.permission!=="granted") return;
-  var n=new Date(),h=n.getHours(),m=n.getMinutes(),k=h+":"+m;
-  if(k===lnk) return;
-  [{h:7,m:30,t:"🍳 Breakfast is served!",b:"Head to mess!"},{h:12,m:30,t:"🍽️ Lunch time!",b:"Mess open for Lunch!"},{h:17,m:0,t:"☕ Snacks time!",b:"Snacks at mess!"},{h:19,m:30,t:"🌙 Dinner ready!",b:"Dinner served at mess!"}]
-  .forEach(function(x){ if(h===x.h&&m===x.m){ new Notification(x.t,{body:x.b}); lnk=k; } });
-}
-
-// ═══════════════════════════════════════════════
-//  TICKER
-// ═══════════════════════════════════════════════
-db.ref("actLog").orderByChild("ts").limitToLast(20).on("value",function(snap){
-  var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
-  if(!a.length) return;
-  var h=a.map(function(x){ return '<span class="ti"><b>'+ts(x.ts)+'</b> '+esc(x.msg)+'</span>'; }).join('');
-  ge("ttrack").innerHTML=h+h;
-});
-function logAct(msg){ db.ref("actLog").push({msg:msg,ts:Date.now()}); }
-
-// ═══════════════════════════════════════════════
-//  MESS MENU
-// ═══════════════════════════════════════════════
-var bf13={Monday:"Vada+Sambar+Chutney+Shavige",Tuesday:"Poha+Fruits+Chowchow Bath+Chutney",Wednesday:"Plain Dosa+Aloo+Chutney+Egg",Thursday:"Bisi Belle Bath+Bread Jam+Fruits",Friday:"Green Moong Dosa+Oats+Chutney",Saturday:"Tomato Bath+Puliyogare+Chutney",Sunday:"Masala Dosa+Aloo+Chutney"};
-var bf24={Monday:"Millets Khichdi+Vada+Sambar+Idly",Tuesday:"Lemon Rice+Bread Jam+Fruits",Wednesday:"Ragi Dosa+Dalia+Tomato Chutney+Egg",Thursday:"Onion Uthappam+Mangalore Bajji+Chutney",Friday:"Dal Khichdi+Dosa+Chutney",Saturday:"Pongal+Bread Jam+Fruits",Sunday:"Set Dosa+Chutney"};
-var dm={Monday:{L:"Poori/Ragi Ball+Rice+Drumstick+Channa+Curd",S:"Cutlet+Tea",D:"Dal Makhni+Rice+Dal+Veg"},Tuesday:{L:"Methi Chapathi+Rice+Dal+Veg Pulav+Curd",S:"Kabuli Husli+Tea",D:"Soyabean+Radish Sambhar+Chapati"},Wednesday:{L:"Chapathi/Ragi+Rice+Paneer+Sprouts Sambhar",S:"Samosa+Tea",D:"Chapathi+Rice+Aloo+Rasam"},Thursday:{L:"Paratha+Rajma+Jeera Rice+Pudina Rice+Curd",S:"Vada Pav+Tea",D:"Chapathi+Egg Curry+Dal Palak+Salad"},Friday:{L:"Palak Chapati+Bhindi+Chicken Biryani+Curd",S:"Bhel Puri+Tea",D:"Chapathi+Rice+Dal+Veg"},Saturday:{L:"Chapathi+Rice+Dal+Mix Veg Beans+Curd",S:"Masala Vada+Tea",D:"Chapathi+Dal+Veg+Salad"},Sunday:{L:"Mushroom/Paneer Biryani+Salad",S:"Pav Bhaji+Tea",D:"Chapathi+Beetroot Palya+Veg"}};
-var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-function wkPat(d){ var fd=new Date(d.getFullYear(),d.getMonth(),1),wk=Math.ceil((d.getDate()+fd.getDay())/7); return(wk===1||wk===3)?"w13":"w24"; }
-function nxMeal(){ var n=new Date(),h=n.getHours(),day=DAYS[n.getDay()]; if(h>=22){var t=new Date(n);t.setDate(t.getDate()+1);return{date:t,day:DAYS[t.getDay()],meal:"Breakfast"};} if(h>=18)return{date:n,day:day,meal:"Dinner"}; if(h>=15)return{date:n,day:day,meal:"Snacks"}; if(h>=10)return{date:n,day:day,meal:"Lunch"}; return{date:n,day:day,meal:"Breakfast"}; }
-function getMnu(date,day,meal){ if(meal==="Breakfast") return (wkPat(date)==="w13"?bf13:bf24)[day]||""; var k={Lunch:"L",Snacks:"S",Dinner:"D"}[meal]; return dm[day]?dm[day][k]||"":""; }
-function updMess(){ var n=nxMeal(); setText("mess-meal","Next: "+n.meal); setText("mess-menu",getMnu(n.date,n.day,n.meal)); }
-updMess(); setInterval(updMess,60000);
-
-// ═══════════════════════════════════════════════
-//  VOTING ENGINE
-//  Uses atomic _voteCount so confirmed state is reliable
-// ═══════════════════════════════════════════════
-var confirmed = {};
-
-function doVote(place, value, thresh){
-  var dvRef = db.ref(place+"_dv/"+devId);
-  dvRef.once("value",function(snap){
-    if(snap.exists()) return toast("Already voted for "+place);
-    dvRef.set({v:value,ts:Date.now()});
-
-    db.ref(place+"_votedFor").once("value",function(vf){
-      var cur=vf.val();
-      if(cur && cur!==value){
-        dvRef.remove();
-        return toast("Vote in progress for: "+cur);
-      }
-      if(!cur) db.ref(place+"_votedFor").set(value);
-
-      db.ref(place+"_voteCount").transaction(function(c){ return (c||0)+1; },function(err,ok,sn){
-        if(err||!ok||!sn){ dvRef.remove(); return toast("Error voting, try again"); }
-        var count=sn.val(), rem=thresh-count;
-        if(count>=thresh){
-          console.log("CONFIRMING:", place, value);
-            db.ref(place).set({status:value,ts:Date.now()},function(){
-            db.ref(place+"_voteCount").remove();
-            db.ref(place+"_votedFor").remove();
-            db.ref(place+"_dv").remove();
-            db.ref(place+"_pend").remove();
-          });
-          logAct("✅ "+thresh+"/"+thresh+" confirmed: "+place+" → "+value);
-          toast("✅ Community confirmed!");
-        } else {
-          db.ref(place+"_pend").set("Awaiting "+rem+" more confirmation(s)");
-          logAct("🗳️ "+place+" vote "+count+"/"+thresh+": "+value);
-          toast("Vote recorded! "+rem+" more needed.");
-        }
-      });
-    });
-  });
-  closeModal();
-}
-
-function adminSet(place, value){
-  if(!checkAdmin()) return;
-  db.ref(place).set({status:value,ts:Date.now()});
-  db.ref(place+"_voteCount").remove();
-  db.ref(place+"_votedFor").remove();
-  db.ref(place+"_dv").remove();
-  db.ref(place+"_pend").remove();
-  logAct("🔐 Admin set: "+place+" → "+value);
-  toast("✅ Override applied!"); closeModal();
-}
-
-// ═══════════════════════════════════════════════
-//  STATUS LISTENERS
-// ═══════════════════════════════════════════════
-function listenPlace(place, thresh, onStatus){
-  db.ref(place).on("value",function(snap){
-    var d=snap.val();
-    if(!d||!d.status){ confirmed[place]=false; setCB(place,0,false,thresh); onStatus(null); return; }
-    confirmed[place]=true;
-    setCB(place,0,true,thresh);
-    onStatus(d);
-  });
-  db.ref(place+"_voteCount").on("value",function(snap){
-    var c=snap.val()||0;
-    var e=ge(place+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
-    if(!confirmed[place]) setCB(place,c,false,thresh);
-  });
-  db.ref(place+"_pend").on("value",function(snap){
-    var e=ge(place+"-pend"); if(e) e.textContent=(!confirmed[place]&&snap.val())?snap.val():"";
-  });
-}
-
-
-// MESS
-listenPlace("mess",T_MESS,function(d){
-  console.log("MESS LISTENER FIRED:", d);
-  var av=ge("mess-avail"),tEl=ge("mess-ts");
-
-  if(!d){
-    paintCard("mess-card","dark");
-    av.className="sbdg s-gray";
-    av.textContent="Not Updated";
-    if(tEl) tEl.textContent="";
-    return;
-  }
-
-  var st = (d.status || "").trim().toLowerCase();
-
-  if(st === "food available"){
-    paintCard("mess-card","green");
-    av.className="sbdg s-green";
-    av.textContent="✅ Food Available";
-  }
-  else if(st === "food not available"){
-    paintCard("mess-card","red");
-    av.className="sbdg s-red";
-    av.textContent="❌ Food Not Available";
-  }
-  else{
-    paintCard("mess-card","dark");
-    av.className="sbdg s-gray";
-    av.textContent=d.status || "Not Updated";
-  }
-
-  if(tEl) tEl.textContent=ago(d.ts);
-});
-
-
-// GYM
-listenPlace("gym",T_GYM,function(d){
-  var s=ge("gym-status"),tEl=ge("gym-ts");
-
-  if(!d){
-    paintCard("gym-card","dark");
-    s.className="sbdg s-gray";
-    s.textContent="Not Updated";
-    if(tEl) tEl.textContent="";
-    return;
-  }
-
-  var st = (d.status || "").trim();
-
-  if(st === "Open · Free"){
-    paintCard("gym-card","green");
-    s.className="sbdg s-green";
-    s.textContent="✅ Open · Free";
-  }
-  else if(st === "Open · Crowded"){
-    paintCard("gym-card","amber");
-    s.className="sbdg s-amber";
-    s.textContent="⚠️ Crowded";
-  }
-  else if(st === "Closed"){
-    paintCard("gym-card","red");
-    s.className="sbdg s-red";
-    s.textContent="🔒 Closed";
-  }
-  else{
-    paintCard("gym-card","dark");
-    s.className="sbdg s-gray";
-    s.textContent=st || "Not Updated";
-  }
-
-  if(tEl) tEl.textContent=ago(d.ts);
-});
-
-
-// NESCAFE
-listenPlace("nescafe",T_NESCAFE,function(d){
-  var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
-  if(!d){ paintCard("nescafe-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  if(d.status==="Open"){ paintCard("nescafe-card","green"); s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else { paintCard("nescafe-card","red"); s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
-  if(tEl) tEl.textContent=ago(d.ts);
-});
-
-// NANDINI
-listenPlace("nandini",T_NANDINI,function(d){
-  var s=ge("nandini-avail"),tEl=ge("nandini-ts");
-  if(!d){ paintCard("nandini-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  if(d.status==="Open"){ paintCard("nandini-card","green"); s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else { paintCard("nandini-card","red"); s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
-  if(tEl) tEl.textContent=ago(d.ts);
-});
-
-// BADMINTON
-listenPlace("bad",T_BAD,function(d){
-  var s=ge("bad-avail"),tEl=ge("bad-ts");
-  if(!d||!s){ paintCard("bad-card","dark"); return; }
-  var st=d.status||"Not Updated";
-  if(st==="Full"){ paintCard("bad-card","red"); s.className="sbdg s-red"; }
-  else if(st.includes("1")||st.includes("2")){ paintCard("bad-card","amber"); s.className="sbdg s-amber"; }
-  else { paintCard("bad-card","green"); s.className="sbdg s-green"; }
-  s.textContent=st;
-  if(tEl) tEl.textContent=ago(d.ts);
-});
-
-// DOCTOR ON CAMPUS
-listenPlace("doc",T_DOC,function(d){
-  var s=ge("doc-avail"),tEl=ge("doc-ts");
-  if(!d){ paintCard("doc-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  if(d.status==="On Campus"){ paintCard("doc-card","green"); s.className="sbdg s-green"; s.textContent="✅ On Campus"; }
-  else { paintCard("doc-card","red"); s.className="sbdg s-red"; s.textContent="❌ Not Available"; }
-  if(tEl) tEl.textContent=ago(d.ts);
-});
-
-// Suggestions
-db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numChildren()||0)+" suggestion(s)"); });
-
-// ═══════════════════════════════════════════════
-//  FACULTY GRID
-// ═══════════════════════════════════════════════
-var facConf = {};  // tracks which faculty cards are confirmed
-
-function buildFacultyGrid(){
-  var grid = ge("faculty-grid");
-  grid.innerHTML = FACULTY.map(function(name,i){
-    var key = "fac_"+i;
-    var short = name.replace(/^(Dr\.|Prof\.)\s/,"");
-    return '<div class="card" id="'+key+'-card" onclick="openFacModal('+i+')" style="min-width:0;">'+
-      '<div class="ch"><span class="ct" style="font-size:0.82em;">👤 '+esc(short)+'</span></div>'+
-      '<span class="sbdg s-gray" id="'+key+'-status">Not Updated</span>'+
-      '<div class="cb cb-none" id="'+key+'-cb" style="font-size:0.62em;">⬜ No votes</div>'+
-      '<div class="vc" id="'+key+'-vc"></div>'+
-      '<div class="tc" id="'+key+'-ts"></div>'+
-    '</div>';
-  }).join('');
-
-  // Listen to each faculty
-  FACULTY.forEach(function(name,i){
-    var key = "fac_"+i;
-    listenFaculty(key, T_PROF);
-  });
-}
-
-function listenFaculty(key, thresh){
-  db.ref(key).on("value",function(snap){
-    var d=snap.val();
-    var s=ge(key+"-status"), tEl=ge(key+"-ts");
-    if(!d||!d.status){
-      facConf[key]=false;
-      paintCard(key+"-card","dark");
-      if(s){ s.className="sbdg s-gray"; s.textContent="Not Updated"; }
-      setCB(key,0,false,thresh);
-      return;
-    }
-    facConf[key]=true;
-    setCB(key,0,true,thresh);
-    var st=d.status;
-    if(st==="In Class"){ paintCard(key+"-card","green"); if(s){ s.className="sbdg s-green"; s.textContent="🏫 In Class"; } }
-    else if(st==="In Cabin"){ paintCard(key+"-card","teal"); if(s){ s.className="sbdg s-teal"; s.textContent="🚪 In Cabin"; } }
-    else if(st==="Admin"){ paintCard(key+"-card","amber"); if(s){ s.className="sbdg s-amber"; s.textContent="🏢 Admin"; } }
-    else if(st==="On Leave"){ paintCard(key+"-card","red"); if(s){ s.className="sbdg s-red"; s.textContent="🏖️ On Leave"; } }
-    else { paintCard(key+"-card","blue"); if(s){ s.className="sbdg s-blue"; s.textContent=st; } }
-    if(tEl) tEl.textContent=ago(d.ts);
-  });
-  db.ref(key+"_voteCount").on("value",function(snap){
-    var c=snap.val()||0;
-    var e=ge(key+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
-    if(!facConf[key]) setCB(key,c,false,thresh);
-  });
-}
-
-buildFacultyGrid();
-
-// ═══════════════════════════════════════════════
-//  MODAL
-// ═══════════════════════════════════════════════
-function adminRow(place, options){
-  if(!isAdmin) return '';
-  var btns = options.map(function(o){
-    return '<button class="adm-btn" onclick="adminSet(\''+place+'\',\''+o.v+'\')">'+o.l+'</button>';
-  }).join('');
-  return '<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+btns+'</div></div>';
-}
-
-function openModal(place){
-  var h='<div class="mh"><span>';
-
-  if(place==='mess'){
-    h+='🍽️ Mess</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_MESS+' confirmations</p>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'mess\',\'Food Available\','+T_MESS+')">✅ Food Available</button>'+
-      '<button class="mb r" onclick="doVote(\'mess\',\'Food Not Available\','+T_MESS+')">❌ Food Not Available</button>'+
-    '</div>'+
-    adminRow('mess',[{v:'Food Available',l:'✅ Force Available'},{v:'Food Not Available',l:'❌ Force Not Available'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='gym'){
-    h+='🏋️ Gym</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'gym\',\'Open · Free\','+T_GYM+')">✅ Open · Free</button>'+
-      '<button class="mb a" onclick="doVote(\'gym\',\'Open · Crowded\','+T_GYM+')">⚠️ Open · Crowded</button>'+
-      '<button class="mb r" onclick="doVote(\'gym\',\'Closed\','+T_GYM+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('gym',[{v:'Open · Free',l:'✅ Free'},{v:'Open · Crowded',l:'⚠️ Crowded'},{v:'Closed',l:'🔒 Closed'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='nescafe'){
-    h+='☕ Nescafé</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NESCAFE+' confirmations</p>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'nescafe\',\'Open\','+T_NESCAFE+')">✅ Open</button>'+
-      '<button class="mb r" onclick="doVote(\'nescafe\',\'Closed\','+T_NESCAFE+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('nescafe',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='nandini'){
-    h+='🥛 Nandini</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NANDINI+' confirmations</p>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'nandini\',\'Open\','+T_NANDINI+')">✅ Open</button>'+
-      '<button class="mb r" onclick="doVote(\'nandini\',\'Closed\','+T_NANDINI+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('nandini',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='bad'){
-    h+='🏸 Badminton</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">How many courts FREE? (needs '+T_BAD+')</p>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'bad\',\'4 Free\','+T_BAD+')">🟢 All 4 Free</button>'+
-      '<button class="mb g" onclick="doVote(\'bad\',\'3 Free\','+T_BAD+')">🟢 3 Free</button>'+
-      '<button class="mb a" onclick="doVote(\'bad\',\'2 Free\','+T_BAD+')">🟡 2 Free</button>'+
-      '<button class="mb a" onclick="doVote(\'bad\',\'1 Free\','+T_BAD+')">🟡 1 Free</button>'+
-      '<button class="mb r" onclick="doVote(\'bad\',\'Full\','+T_BAD+')">🔴 All Full</button>'+
-    '</div>'+
-    adminRow('bad',[{v:'4 Free',l:'All 4 Free'},{v:'Full',l:'Full'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='doc'){
-    h+='🏥 Doctor on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Is the doctor on campus? (needs '+T_DOC+')</p>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'doc\',\'On Campus\','+T_DOC+')">✅ Yes — Doctor on Campus</button>'+
-      '<button class="mb r" onclick="doVote(\'doc\',\'Not Available\','+T_DOC+')">❌ No — Not Available</button>'+
-    '</div>'+
-    adminRow('doc',[{v:'On Campus',l:'✅ On Campus'},{v:'Not Available',l:'❌ Not Available'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='sug'){
-    h+='💡 Suggestions</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<textarea class="mi" id="sug-in" rows="4" placeholder="Share an idea or bug report..."></textarea>';
-    h+='<div class="bst"><button class="mb g" onclick="doSug()">Submit</button></div>';
-    h+='<hr style="border:none;border-top:1px solid #2a2a3e;margin:14px 0;">';
-    h+='<div id="sug-feed" style="max-height:200px;overflow-y:auto;"></div>';
-    h+='<button class="mb x" style="margin-top:10px;" onclick="closeModal()">Close</button>';
-    setTimeout(function(){
-      db.ref("suggestions").orderByChild("ts").limitToLast(10).once("value",function(snap){
-        var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
-        var e=ge("sug-feed"); if(!e) return;
-        e.innerHTML=a.length?a.map(function(s){ return '<div style="background:rgba(255,255,255,0.03);border:1px solid #2a2a3e;border-radius:9px;padding:9px;margin-bottom:7px;font-size:0.8em;color:#94a3b8;">'+esc(s.text||'')+'<div style="font-size:0.7em;color:#444;margin-top:3px;">'+ago(s.ts)+'</div></div>'; }).join('') : '<p style="color:#444;text-align:center;padding:10px;">No suggestions yet</p>';
-      });
-    },100);
-  }
-
-  ge("mbox").innerHTML=h;
-  ge("modal").classList.add("active");
-}
-
-function openFacModal(idx){
-  var key="fac_"+idx, name=FACULTY[idx];
-  var h='<div class="mh"><span>👤 '+esc(name)+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
-  h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Where is '+esc(name.split(' ')[1]||name)+' right now? (needs '+T_PROF+')</p>';
-  h+='<div class="bst">'+
-    '<button class="mb g" onclick="doVote(\''+key+'\',\'In Class\','+T_PROF+')">🏫 In Class</button>'+
-    '<button class="mb t" onclick="doVote(\''+key+'\',\'In Cabin\','+T_PROF+')">🚪 In Cabin</button>'+
-    '<button class="mb a" onclick="doVote(\''+key+'\',\'Admin\','+T_PROF+')">🏢 Admin Block</button>'+
-    '<button class="mb r" onclick="doVote(\''+key+'\',\'On Leave\','+T_PROF+')">🏖️ On Leave</button>'+
-  '</div>';
-  if(isAdmin){
-    h+='<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+
-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'In Class\')">In Class</button>'+
-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'In Cabin\')">In Cabin</button>'+
-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'Admin\')">Admin</button>'+
-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'On Leave\')">On Leave</button>'+
-    '</div></div>';
-  }
-  h+='<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-  ge("mbox").innerHTML=h;
-  ge("modal").classList.add("active");
-}
-
-function closeModal(){ ge("modal").classList.remove("active"); }
-function bgClose(e){ if(e.target===ge("modal")) closeModal(); }
-
-// ═══════════════════════════════════════════════
-//  SUGGESTIONS
-// ═══════════════════════════════════════════════
-function doSug(){
-  var t=(ge("sug-in")||{}).value||""; t=t.trim();
-  if(!t) return alert("Please enter something");
-  db.ref("suggestions").push({text:t,ts:Date.now()});
-  logAct("💡 Suggestion submitted");
-  toast("Thanks!"); closeModal();
-}
-
-// ═══════════════════════════════════════════════
-//  ANNOUNCEMENTS
-// ═══════════════════════════════════════════════
-function openAnnPost(){
-  if(!checkAdmin()) return;
-  var h='<div class="mh"><span>📢 Post Announcement</span><button class="mx" onclick="closeModal()">✕</button></div>';
-  h+='<textarea class="mi" id="ann-in" rows="4" placeholder="Announcement text..."></textarea>';
-  h+='<select class="msel" id="ann-tag"><option value="general">General</option><option value="mess">🍛 Mess</option><option value="event">🎉 Event</option><option value="academic">📚 Academic</option></select>';
-  h+='<div class="bst"><button class="mb g" onclick="postAnn()">Post Announcement</button><button class="mb x" onclick="closeModal()">Cancel</button></div>';
-  ge("mbox").innerHTML=h; ge("modal").classList.add("active");
-}
-function postAnn(){
-  var t=(ge("ann-in")||{}).value||""; t=t.trim();
-  var tag=(ge("ann-tag")||{}).value||"general";
-  if(!t) return alert("Please enter text");
-  db.ref("announcements").push({text:t,tag:tag,ts:Date.now()});
-  logAct("📢 Announcement posted");
-  toast("📢 Posted!"); closeModal();
-}
-function delAnn(id){ if(!checkAdmin()) return; if(!confirm("Delete?")) return; db.ref("announcements/"+id).remove(); toast("Deleted"); }
-function cleanAnn(){ db.ref("announcements").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>ANN_EXP) db.ref("announcements/"+c.key).remove(); }); }); }
-cleanAnn(); setInterval(cleanAnn,300000);
-
-db.ref("announcements").orderByChild("ts").on("value",function(snap){
-  var posts=[],now=Date.now();
-  snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<ANN_EXP) posts.push({id:c.key,...d}); });
-  posts.reverse();
-  var con=ge("ann-list");
-  if(!posts.length){ con.innerHTML='<div class="ann-empty">No announcements yet</div>'; return; }
-  con.innerHTML=posts.map(function(p){
-    var exp=Math.ceil((ANN_EXP-(now-p.ts))/60000);
-    var expTxt=exp>60?Math.ceil(exp/60)+"hr left":exp+"m left";
-    return '<div class="ann-card"><div class="ann-txt">'+esc(p.text)+'</div>'+
-      '<div class="ann-meta"><span class="ann-tag tag-'+p.tag+'">'+p.tag+'</span><span class="ann-ts">'+ago(p.ts)+'</span><span class="ann-ts" style="color:#333;">⏱ '+expTxt+'</span>'+
-      (isAdmin?'<button class="ann-del" onclick="delAnn(\''+p.id+'\')">🗑</button>':'')+
-      '</div></div>';
-  }).join('');
-});
-
-// ═══════════════════════════════════════════════
-//  IMMEDIATE UPDATES + DOWNVOTES
-// ═══════════════════════════════════════════════
-db.ref("immediateUpdates").orderByChild("ts").limitToLast(10).on("value",function(snap){
-  var sec=ge("imm-wrap"),con=ge("imm-list"),posts=[];
-  snap.forEach(function(c){ posts.push({id:c.key,...c.val()}); });
-  posts.reverse();
-  if(!posts.length){ sec.style.display="none"; return; }
-  sec.style.display="block";
-  con.innerHTML=posts.map(function(p){
-    var dv=p.downvotes||0,dvd=!!localStorage.getItem("idv_"+p.id);
-    return '<div class="imm-card">'+esc(p.text)+
-      '<div class="imm-meta">🔴 Crowd verified · '+ago(p.ts)+
-      ' <span style="color:#92400e;">'+dv+'/5 downvotes</span>'+
-      '<button class="dv-btn" onclick="'+(dvd?'toast(\'Already downvoted\')':'dvImm(\''+p.id+'\')')+'" '+(dvd?'style="opacity:0.4;"':'')+'>👎</button>'+
-      (isAdmin?'<button class="ann-del" onclick="admDel(\''+p.id+'\')">🗑</button>':'')+
-      '</div></div>';
-  }).join('');
-});
-
-function dvImm(id){
-  var k="idv_"+id; if(localStorage.getItem(k)) return toast("Already downvoted");
-  localStorage.setItem(k,"1");
-  db.ref("immediateUpdates/"+id).transaction(function(d){ if(!d) return d; d.downvotes=(d.downvotes||0)+1; return d; },function(err,ok,snap){
-    if(!snap) return; var d=snap.val();
-    if(d&&d.downvotes>=IMM_DV){ db.ref("immediateUpdates/"+id).remove(); logAct("🗑️ Update removed by community"); toast("Post removed by community"); }
-    else toast("Downvoted ("+(d?d.downvotes:1)+"/5)");
-  });
-}
-function admDel(id){ if(!checkAdmin()) return; db.ref("immediateUpdates/"+id).remove(); toast("Deleted"); }
-
-// ═══════════════════════════════════════════════
-//  HEARTBEAT
-// ═══════════════════════════════════════════════
-function updateCC(){ var v=ge("hb-txt").value,c=ge("chct"); c.textContent=v.length+" / 80"; c.className="chct"+(v.length>70?" warn":""); }
-function postHB(){
-  var t=ge("hb-txt").value.trim();
-  if(!t) return alert("Write something"); if(t.length>80) return alert("Max 80 chars");
-  db.ref("heartbeat").push({text:t,ts:Date.now(),upvotes:0,graduated:false});
-  logAct("💗 Heartbeat: \""+t.slice(0,28)+(t.length>28?"…":"")+"\"");
-  ge("hb-txt").value=""; ge("chct").textContent="0 / 80";
-}
-function uvHB(id){
-  var k="hbv_"+id; if(localStorage.getItem(k)) return toast("Already upvoted");
-  localStorage.setItem(k,"1");
-  db.ref("heartbeat/"+id).transaction(function(d){ if(!d) return d; d.upvotes=(d.upvotes||0)+1; return d; },function(err,ok,snap){
-    if(!snap) return; var d=snap.val();
-    if(d&&d.upvotes>=HB_VOTES&&!d.graduated){
-      db.ref("immediateUpdates").push({text:d.text,ts:Date.now()});
-      db.ref("heartbeat/"+id).update({graduated:true});
-      logAct("🔴 Heartbeat graduated!");
-      setTimeout(function(){ db.ref("heartbeat/"+id).remove(); },2500);
-    }
-  });
-}
-function cleanHB(){ db.ref("heartbeat").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated&&(now-d.ts)>HB_TTL) db.ref("heartbeat/"+c.key).remove(); }); }); }
-cleanHB(); setInterval(cleanHB,30000);
-
-db.ref("heartbeat").on("value",function(snap){
-  var feed=ge("hb-feed"),now=Date.now(),posts=[];
-  snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated) posts.push({id:c.key,...d}); });
-  posts.sort(function(a,b){ return b.ts-a.ts; });
-  if(!posts.length){ feed.innerHTML='<div class="hb-empty">No active posts · be the first</div>'; return; }
-  feed.innerHTML=posts.map(function(p){
-    var voted=!!localStorage.getItem("hbv_"+p.id);
-    var rem=Math.max(0,HB_TTL-(now-p.ts)),pct=(rem/HB_TTL)*100,mins=Math.ceil(rem/60000),uv=p.upvotes||0;
-    return '<div class="hb-card"><div style="flex:1;"><div class="hb-txt">'+esc(p.text)+'</div>'+
-      '<div style="font-size:0.62em;color:#7f3040;margin-top:3px;">⏱ '+mins+'m left · '+uv+'/'+HB_VOTES+' upvotes</div>'+
-      '<div class="tbar"><div class="tfil" style="width:'+pct+'%"></div></div></div>'+
-      '<div class="hb-r"><button class="uv-btn'+(voted?' voted':'')+'" onclick="'+(voted?'toast(\'Already upvoted\')':'uvHB(\''+p.id+'\')')+'">👍 '+uv+'</button></div></div>';
-  }).join('');
-});
-
-// ═══════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════
-initNotif();
-</script>
-</body>
-</html>
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/index.html b/index.html
+index e8636699140c0ed6cc1c60239fcf54b1c80d47b4..ba7d3dd4f980dca7b5047d39f69a49b64a223487 100644
+--- a/index.html
++++ b/index.html
+@@ -1,967 +1,983 @@
+-<!DOCTYPE html>
+-<html>
+-<head>
+-<meta charset="UTF-8">
+-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+-<title>FundBASEU Tracker</title>
+-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+-<style>
+-*{margin:0;padding:0;box-sizing:border-box;}
+-body{font-family:'DM Sans',sans-serif;background:#0f0f1a;min-height:100vh;padding:15px 15px 90px;color:#fff;}
+-
+-header{text-align:center;margin-bottom:12px;padding-top:8px;}
+-header h1{font-family:'Space Grotesk',sans-serif;font-size:1.9em;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;margin-bottom:4px;}
+-header p{font-size:0.8em;color:#666;margin-bottom:8px;}
+-.upd-link{display:inline-block;background:rgba(167,139,250,0.15);padding:6px 14px;border-radius:20px;color:#a78bfa;text-decoration:none;font-size:0.8em;font-weight:600;border:1px solid rgba(167,139,250,0.3);}
+-
+-#admin-bar{display:none;position:fixed;top:10px;right:10px;background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#f87171;padding:4px 12px;border-radius:20px;font-size:0.7em;font-weight:700;z-index:600;cursor:pointer;}
+-#admin-bar.show{display:block;}
+-
+-.notif-banner{display:none;background:linear-gradient(135deg,#1e1b4b,#1e3a5f);border:1px solid #4f46e5;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:0.8em;color:#a5b4fc;align-items:center;gap:10px;flex-wrap:wrap;}
+-.notif-banner.show{display:flex;}
+-.notif-btn{background:#4f46e5;border:none;color:white;padding:6px 14px;border-radius:8px;font-size:0.82em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+-
+-.ticker-wrap{background:#12121f;border:1px solid #1e1e35;border-radius:12px;padding:7px 12px;margin:10px 0;display:flex;align-items:center;gap:10px;overflow:hidden;}
+-.ticker-live{font-family:'Space Grotesk',sans-serif;font-size:0.62em;font-weight:800;color:#ef4444;letter-spacing:1.5px;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+-.ldot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:blink 1s infinite;}
+-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+-.ticker-vp{flex:1;overflow:hidden;}
+-.ticker-tr{display:flex;white-space:nowrap;animation:tickanim 30s linear infinite;}
+-.ticker-tr:hover{animation-play-state:paused;}
+-@keyframes tickanim{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+-.ti{font-size:0.75em;color:#64748b;padding-right:40px;}
+-.ti b{color:#94a3b8;font-weight:500;}
+-
+-.stats-bar{display:flex;justify-content:center;gap:28px;margin:12px 0;flex-wrap:wrap;}
+-.s-box{text-align:center;}
+-.s-num{font-family:'Space Grotesk',sans-serif;font-size:1.7em;font-weight:800;display:block;color:#fff;}
+-.s-lbl{font-size:0.72em;color:#555;}
+-
+-.sec-lbl{font-family:'Space Grotesk',sans-serif;font-size:0.65em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#444;margin:14px 0 8px 2px;}
+-
+-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:6px;}
+-
+-/* ── CARD: base state + transition ── */
+-.card{
+-  border-radius:16px;padding:14px;
+-  cursor:pointer;border:1px solid #242438;
+-  transition:background 0.4s ease, border-color 0.4s ease, transform 0.2s, box-shadow 0.2s;
+-  -webkit-tap-highlight-color:transparent;
+-  position:relative;overflow:hidden;
+-  box-shadow:0 4px 18px rgba(0,0,0,0.4);
+-  /* default dark */
+-  background:#1a1a2e;
+-}
+-.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.5);}
+-.card:active{transform:scale(0.97);}
+-
+-/* ── CARD COLOR STATES (applied via JS .style directly) ── */
+-/* These are templates used by JS — no class switching needed */
+-
+-.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+-.ct{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#e2e8f0;}
+-.ci{font-size:1.3em;}
+-
+-/* Status badge inside card */
+-.sbdg{display:block;padding:5px 10px;border-radius:20px;font-size:0.76em;font-weight:700;margin:3px 0;text-align:center;width:100%;transition:background 0.3s,color 0.3s,border-color 0.3s;}
+-
+-/* Explicit colour variants — set via JS className */
+-.s-green{background:rgba(16,185,129,0.25);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4);}
+-.s-red{background:rgba(239,68,68,0.25);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);}
+-.s-amber{background:rgba(245,158,11,0.25);color:#fde68a;border:1px solid rgba(245,158,11,0.4);}
+-.s-blue{background:rgba(96,165,250,0.25);color:#bfdbfe;border:1px solid rgba(96,165,250,0.4);}
+-.s-gray{background:rgba(100,116,139,0.2);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);}
+-.s-purple{background:rgba(167,139,250,0.2);color:#ddd6fe;border:1px solid rgba(167,139,250,0.3);}
+-.s-teal{background:rgba(20,184,166,0.25);color:#99f6e4;border:1px solid rgba(20,184,166,0.4);}
+-
+-/* Community confirmation badge */
+-.cb{display:inline-flex;align-items:center;gap:4px;font-size:0.67em;font-weight:700;margin-top:5px;padding:3px 9px;border-radius:7px;}
+-.cb-ok{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
+-.cb-wait{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);}
+-.cb-none{background:rgba(100,116,139,0.12);color:#4b5563;border:1px solid rgba(100,116,139,0.2);}
+-
+-.mc{font-size:0.7em;color:#94a3b8;margin-top:5px;background:rgba(255,255,255,0.04);padding:5px 8px;border-radius:8px;line-height:1.45;}
+-.tc{font-size:0.65em;color:#444;margin-top:5px;text-align:center;}
+-.vc{font-size:0.65em;color:#6366f1;margin-top:2px;text-align:center;}
+-
+-/* ANNOUNCEMENTS */
+-.ann-wrap{margin-top:14px;border:1px solid rgba(167,139,250,0.22);border-radius:18px;padding:14px;background:#0f0a1a;}
+-.ann-title{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#a78bfa;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+-.ann-card{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.18);border-radius:10px;padding:10px 12px;margin-bottom:8px;animation:fu .3s ease;}
+-.ann-txt{font-size:0.85em;color:#e2e8f0;line-height:1.45;}
+-.ann-meta{display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;}
+-.ann-tag{font-size:0.65em;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;}
+-.tag-mess{background:rgba(245,158,11,0.2);color:#fbbf24;}
+-.tag-event{background:rgba(96,165,250,0.2);color:#93c5fd;}
+-.tag-academic{background:rgba(16,185,129,0.2);color:#34d399;}
+-.tag-general{background:rgba(167,139,250,0.2);color:#c4b5fd;}
+-.ann-ts{font-size:0.65em;color:#555;}
+-.ann-del{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.65em;cursor:pointer;font-weight:700;}
+-.ann-empty{text-align:center;color:#444;font-size:0.8em;padding:14px;}
+-.ann-post-btn{display:block;margin:12px auto 0;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.22);color:#a78bfa;padding:5px 14px;border-radius:8px;font-size:0.72em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+-
+-/* IMMEDIATE UPDATES */
+-.imm-wrap{margin-top:14px;border:1px solid rgba(245,158,11,0.22);border-radius:18px;padding:14px;background:#130f00;}
+-.imm-title{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#fbbf24;margin-bottom:10px;}
+-.imm-card{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:9px 11px;margin-bottom:8px;font-size:0.82em;color:#fde68a;line-height:1.45;animation:fu .3s ease;}
+-.imm-meta{font-size:0.65em;color:#78350f;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+-.dv-btn{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.7em;cursor:pointer;font-weight:700;}
+-
+-/* HEARTBEAT */
+-.hb-wrap{margin-top:14px;border:1px solid rgba(255,77,109,0.22);border-radius:18px;padding:14px;background:#150009;position:relative;overflow:hidden;}
+-.hb-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ff4d6d,#ff758c,#ff4d6d);background-size:200%;animation:shimmer 2s infinite;}
+-@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+-.hb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+-.hb-tit{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#ff4d6d;display:flex;align-items:center;gap:6px;}
+-.pdot{width:8px;height:8px;border-radius:50%;background:#ff4d6d;animation:pulse 1.2s infinite;}
+-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+-.hb-rules{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.18);border-radius:10px;padding:9px 11px;margin:8px 0;font-size:0.72em;color:#fca5a5;line-height:1.7;}
+-.hb-rules strong{color:#ff4d6d;display:block;margin-bottom:3px;font-family:'Space Grotesk',sans-serif;}
+-.hb-row{display:flex;gap:8px;margin:8px 0 2px;}
+-.hb-in{flex:1;background:rgba(255,255,255,0.06);border:1px solid #2a1520;border-radius:10px;padding:9px 11px;color:white;font-size:0.82em;font-family:'DM Sans',sans-serif;outline:none;}
+-.hb-in:focus{border-color:#ff4d6d;}
+-.hb-in::placeholder{color:#4a2530;}
+-.chct{font-size:0.65em;color:#4a2530;text-align:right;margin-bottom:6px;}
+-.chct.warn{color:#f59e0b;}
+-.btn-hb{background:#ff4d6d;color:white;border:none;border-radius:10px;padding:9px 13px;font-weight:700;font-size:0.82em;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap;}
+-.hb-feed{display:flex;flex-direction:column;gap:7px;margin-top:8px;max-height:280px;overflow-y:auto;}
+-.hb-card{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.18);border-radius:10px;padding:9px 11px;display:flex;gap:10px;align-items:center;animation:fu .3s ease;}
+-@keyframes fu{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+-.hb-txt{font-size:0.82em;color:#fca5a5;flex:1;line-height:1.4;}
+-.hb-r{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:42px;}
+-.uv-btn{background:rgba(255,77,109,0.15);border:1px solid rgba(255,77,109,0.28);color:#ff4d6d;border-radius:8px;padding:4px 7px;font-size:0.75em;font-weight:700;cursor:pointer;width:100%;text-align:center;}
+-.uv-btn.voted{opacity:0.45;cursor:default;}
+-.tbar{height:2px;background:rgba(255,77,109,0.12);border-radius:2px;margin-top:5px;overflow:hidden;}
+-.tfil{height:100%;background:#ff4d6d;border-radius:2px;transition:width 1s linear;}
+-.hb-empty{text-align:center;color:#4a2530;font-size:0.78em;padding:16px;}
+-
+-/* MODAL */
+-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:flex-end;justify-content:center;}
+-.modal.active{display:flex;}
+-.mbox{background:#1a1a2e;border-radius:24px 24px 0 0;padding:22px 18px 36px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid #2a2a3e;border-bottom:none;animation:su .28s ease;}
+-@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+-.mh{font-family:'Space Grotesk',sans-serif;font-size:1.2em;font-weight:800;color:#e2e8f0;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+-.mx{background:rgba(255,255,255,0.08);border:none;color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.9em;}
+-.bst{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
+-.mb{padding:13px;border:none;border-radius:11px;font-size:0.92em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+-.mb:active{opacity:0.85;}
+-.mb.g{background:#10b981;color:white;}
+-.mb.r{background:#ef4444;color:white;}
+-.mb.a{background:#f59e0b;color:white;}
+-.mb.t{background:#0d9488;color:white;}
+-.mb.x{background:#1f2937;color:#6b7280;margin-top:6px;}
+-.mi{width:100%;background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;border-radius:10px;padding:11px;color:white;font-size:0.88em;font-family:'DM Sans',sans-serif;outline:none;margin-top:8px;}
+-.mi:focus{border-color:#a78bfa;}
+-.msel{width:100%;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:10px;padding:11px;color:white;font-size:0.88em;font-family:'DM Sans',sans-serif;outline:none;margin-top:8px;}
+-.adm-sec{margin-top:14px;padding-top:12px;border-top:1px solid rgba(239,68,68,0.2);}
+-.adm-lbl{font-size:0.72em;color:#ef4444;font-weight:700;margin-bottom:8px;}
+-.adm-row{display:flex;flex-wrap:wrap;gap:8px;}
+-.adm-btn{flex:1;min-width:80px;padding:9px 8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;border-radius:9px;font-size:0.8em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;text-align:center;}
+-
+-.ref-btn{position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:30px;padding:11px 17px;font-size:0.82em;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(102,126,234,0.4);z-index:999;font-family:'Space Grotesk',sans-serif;}
+-
+-#toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;padding:9px 18px;border-radius:12px;font-size:0.82em;z-index:9999;border:1px solid #334155;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;max-width:92vw;text-align:center;}
+-
+-@media(max-width:480px){
+-  header h1{font-size:1.55em;}
+-  .grid{grid-template-columns:1fr 1fr;gap:9px;}
+-  .card{padding:11px;}
+-  .ct{font-size:0.82em;}
+-}
+-</style>
+-</head>
+-<body>
+-<div id="toast"></div>
+-<div id="admin-bar" onclick="adminLogout()">🔐 Admin · tap to exit</div>
+-
+-<div class="container">
+-  <header>
+-    <h1>🎓 FundBASEU Tracker</h1>
+-    <p>Real-time campus status · by students, for students</p>
+-    <a href="https://sway.cloud.microsoft/CuEoSACHmG0wvSfR?ref=Link&loc=play" target="_blank" class="upd-link">📢 FundBASEU Updates →</a>
+-  </header>
+-
+-  <div class="notif-banner" id="notif-banner">
+-    <div style="flex:1;">🔔 Get meal reminders at 7:30am · 12:30pm · 5pm · 7:30pm
+-    <div id="notif-st" style="font-size:0.72em;color:#818cf8;margin-top:3px;"></div></div>
+-    <button class="notif-btn" id="notif-btn" onclick="reqNotif()">Enable</button>
+-  </div>
+-
+-  <div class="ticker-wrap">
+-    <div class="ticker-live"><div class="ldot"></div>LIVE</div>
+-    <div class="ticker-vp"><div class="ticker-tr" id="ttrack"><span class="ti"><b>No activity yet...</b></span><span class="ti"><b>No activity yet...</b></span></div></div>
+-  </div>
+-
+-  <div class="stats-bar">
+-    <div class="s-box"><span class="s-num" id="liveCount">0</span><span class="s-lbl">👥 Live Now</span></div>
+-    <div class="s-box"><span class="s-num" id="totalVis">0</span><span class="s-lbl">📊 Visitors</span></div>
+-  </div>
+-
+-  <div class="sec-lbl">Campus Status</div>
+-  <div class="grid">
+-
+-    <div class="card" id="mess-card" onclick="openModal('mess')">
+-      <div class="ch"><span class="ct">🍽️ Mess</span><span class="ci">🍛</span></div>
+-      <span class="sbdg s-gray" id="mess-avail">Not Updated</span>
+-      <div class="cb cb-none" id="mess-cb">⬜ No votes yet</div>
+-      <span class="sbdg s-blue" id="mess-meal" style="margin-top:5px;"></span>
+-      <div class="mc" id="mess-menu"></div>
+-      <div class="vc" id="mess-vc"></div>
+-      <div class="vc" id="mess-pend"></div>
+-      <div class="tc" id="mess-ts"></div>
+-    </div>
+-
+-    <div class="card" id="gym-card" onclick="openModal('gym')">
+-      <div class="ch"><span class="ct">🏋️ Gym</span><span class="ci">💪</span></div>
+-      <span class="sbdg s-gray" id="gym-status">Not Updated</span>
+-      <div class="cb cb-none" id="gym-cb">⬜ No votes yet</div>
+-      <div class="tc" id="gym-ts"></div>
+-    </div>
+-
+-    <div class="card" id="nescafe-card" onclick="openModal('nescafe')">
+-      <div class="ch"><span class="ct">☕ Nescafé</span><span class="ci">🥤</span></div>
+-      <span class="sbdg s-gray" id="nescafe-avail">Not Updated</span>
+-      <div class="cb cb-none" id="nescafe-cb">⬜ No votes yet</div>
+-      <div class="vc" id="nescafe-vc"></div>
+-      <div class="vc" id="nescafe-pend"></div>
+-      <div class="tc" id="nescafe-ts"></div>
+-    </div>
+-
+-    <div class="card" id="nandini-card" onclick="openModal('nandini')">
+-      <div class="ch"><span class="ct">🥛 Nandini</span><span class="ci">🧃</span></div>
+-      <span class="sbdg s-gray" id="nandini-avail">Not Updated</span>
+-      <div class="cb cb-none" id="nandini-cb">⬜ No votes yet</div>
+-      <div class="vc" id="nandini-vc"></div>
+-      <div class="vc" id="nandini-pend"></div>
+-      <div class="tc" id="nandini-ts"></div>
+-    </div>
+-
+-    <div class="card" id="bad-card" onclick="openModal('bad')">
+-      <div class="ch"><span class="ct">🏸 Badminton</span><span class="ci">🎾</span></div>
+-      <span class="sbdg s-gray" id="bad-avail">Not Updated</span>
+-      <div class="cb cb-none" id="bad-cb">⬜ No votes yet</div>
+-      <div class="vc" id="bad-vc"></div>
+-      <div class="vc" id="bad-pend"></div>
+-      <div class="tc" id="bad-ts"></div>
+-    </div>
+-
+-    <div class="card" id="doc-card" onclick="openModal('doc')">
+-      <div class="ch"><span class="ct">🏥 Doctor</span><span class="ci">💊</span></div>
+-      <span class="sbdg s-gray" id="doc-avail">Not Updated</span>
+-      <div class="cb cb-none" id="doc-cb">⬜ No votes yet</div>
+-      <div class="vc" id="doc-vc"></div>
+-      <div class="vc" id="doc-pend"></div>
+-      <div class="tc" id="doc-ts"></div>
+-    </div>
+-
+-    <div class="card" onclick="openModal('sug')">
+-      <div class="ch"><span class="ct">💡 Suggest</span><span class="ci">📝</span></div>
+-      <span class="sbdg s-purple">Fixes & Ideas</span>
+-      <div class="tc" id="sug-count"></div>
+-    </div>
+-
+-  </div>
+-
+-  <!-- FACULTY SECTION -->
+-  <div class="sec-lbl">Faculty Locator</div>
+-  <div class="grid" id="faculty-grid">
+-    <!-- rendered by JS -->
+-  </div>
+-
+-  <!-- ANNOUNCEMENTS -->
+-  <div class="ann-wrap">
+-    <div class="ann-title">📢 Announcements <span style="font-size:0.6em;color:#6b4fa0;font-weight:400;">12hr expiry</span></div>
+-    <div id="ann-list"><div class="ann-empty">No announcements yet</div></div>
+-    <button class="ann-post-btn" onclick="openAnnPost()">+ Post Announcement (admin only)</button>
+-  </div>
+-
+-  <!-- IMMEDIATE UPDATES -->
+-  <div class="imm-wrap" id="imm-wrap" style="display:none;">
+-    <div class="imm-title">🔴 Immediate Updates <span style="font-size:0.6em;color:#78350f;font-weight:400;margin-left:4px;">5 downvotes = removed</span></div>
+-    <div id="imm-list"></div>
+-  </div>
+-
+-  <!-- HEARTBEAT ZONE -->
+-  <div class="hb-wrap">
+-    <div class="hb-head">
+-      <div class="hb-tit"><div class="pdot"></div>Heartbeat Zone</div>
+-      <span style="font-size:0.68em;color:#7f3040;">anonymous · incubation</span>
+-    </div>
+-    <div class="hb-rules">
+-      <strong>📋 How Heartbeat works:</strong>
+-      • Post anonymously — max 80 characters<br>
+-      • <strong style="color:#ff758c;">5 upvotes</strong> → graduates to 🔴 Immediate Updates<br>
+-      • <strong style="color:#ff758c;">Auto-deletes in 10 min</strong> if under 5 upvotes<br>
+-      • Use for urgent signals, crowd alerts, campus sightings
+-    </div>
+-    <div class="hb-row">
+-      <input class="hb-in" id="hb-txt" maxlength="80" placeholder="What's happening right now..." oninput="updateCC()">
+-      <button class="btn-hb" onclick="postHB()">Post</button>
+-    </div>
+-    <div class="chct" id="chct">0 / 80</div>
+-    <div class="hb-feed" id="hb-feed"><div class="hb-empty">No active posts · be the first</div></div>
+-  </div>
+-</div>
+-
+-<button class="ref-btn" onclick="location.reload()">🔄 Refresh</button>
+-
+-<div class="modal" id="modal" onclick="bgClose(event)">
+-  <div class="mbox" id="mbox"></div>
+-</div>
+-
+-<script>
+-// ═══════════════════════════════════════════════
+-//  CONFIG
+-// ═══════════════════════════════════════════════
+-var ADMIN_PASS = "fundbaseu2024"; // ← change this
+-var T_MESS=3, T_GYM=1, T_NESCAFE=3, T_NANDINI=3, T_BAD=2, T_DOC=2, T_PROF=2;
+-var HB_VOTES=5, HB_TTL=600000, IMM_DV=5, ANN_EXP=43200000;
+-
+-// Faculty list — 12 professors
+-var FACULTY = [
+-  "Dr.Bidur",
+-  "Dr.Megha",
+-  "Dr.Irfan",
+-  "Dr.Shameer",
+-  "Dr.Nageshwar",
+-  "Dr.Ishfaq",
+-  "Dr.Muzaffar",
+-  "Dr.Kasturi",
+-  "Dr.Moushmi",
+-  "Dr.Sushmita",
+-  "Dean",
+-  "Dr.Asha"
+-];
+-
+-// ═══════════════════════════════════════════════
+-//  FIREBASE
+-// ═══════════════════════════════════════════════
+-firebase.initializeApp({
+-  apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
+-  authDomain:"fundbaseu-tracker.firebaseapp.com",
+-  databaseURL:"https://fundbaseu-tracker-default-rtdb.firebaseio.com",
+-  projectId:"fundbaseu-tracker"
+-});
+-var db = firebase.database();
+-
+-var pr = db.ref("presence").push();
+-pr.set(true); pr.onDisconnect().remove();
+-db.ref("presence").on("value",function(s){ setText("liveCount",s.numChildren()); });
+-db.ref("totalVisitors").transaction(function(c){ return (c||0)+1; });
+-db.ref("totalVisitors").on("value",function(s){ setText("totalVis",s.val()||0); });
+-
+-var devId = localStorage.getItem("did") || (function(){ var id="d_"+Math.random().toString(36).slice(2,11); localStorage.setItem("did",id); return id; })();
+-
+-// ═══════════════════════════════════════════════
+-//  HELPERS
+-// ═══════════════════════════════════════════════
+-function ge(id){ return document.getElementById(id); }
+-function setText(id,v){ var e=ge(id); if(e) e.textContent=v; }
+-function ago(t){ if(!t) return ""; var m=Math.floor((Date.now()-t)/60000); if(m<1) return "just now"; if(m===1) return "1m ago"; if(m<60) return m+"m ago"; var h=Math.floor(m/60); if(h<24) return h+"hr ago"; return Math.floor(h/24)+"d ago"; }
+-function ts(t){ if(!t) return ""; var d=new Date(t); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+-function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+-function toast(msg){ var t=ge("toast"); t.textContent=msg; t.style.opacity="1"; clearTimeout(t._x); t._x=setTimeout(function(){ t.style.opacity="0"; },2800); }
+-
+-// ═══════════════════════════════════════════════
+-//  CARD COLOR — applied directly via style + border
+-//  This bypasses ALL CSS specificity issues
+-// ═══════════════════════════════════════════════
+-var CARD_COLORS = {
+-  green:  { bg:"linear-gradient(135deg,#052e16,#064e3b)", border:"#10b981", glow:"rgba(16,185,129,0.3)" },
+-  red:    { bg:"linear-gradient(135deg,#450a0a,#7f1d1d)", border:"#ef4444", glow:"rgba(239,68,68,0.3)" },
+-  amber:  { bg:"linear-gradient(135deg,#451a03,#78350f)", border:"#f59e0b", glow:"rgba(245,158,11,0.3)" },
+-  teal:   { bg:"linear-gradient(135deg,#042f2e,#134e4a)", border:"#14b8a6", glow:"rgba(20,184,166,0.3)" },
+-  blue:   { bg:"linear-gradient(135deg,#0c1a4a,#1e3a8a)", border:"#3b82f6", glow:"rgba(59,130,246,0.3)" },
+-  purple: { bg:"linear-gradient(135deg,#1e1b4b,#312e81)", border:"#818cf8", glow:"rgba(129,140,248,0.3)" },
+-  dark:   { bg:"#1a1a2e",                                border:"#242438", glow:"none" }
+-};
+-
+-function paintCard(id, colorKey){
+-  var card = ge(id);
+-  if (!card) return;
+-
+-  var c = CARD_COLORS[colorKey] || CARD_COLORS.dark;
+-
+-  card.style.setProperty("background", c.bg, "important");
+-  card.style.setProperty("border-color", c.border, "important");
+-  card.style.setProperty("box-shadow", "0 6px 25px " + c.glow, "important");
+-}
+-
+-
+-// ═══════════════════════════════════════════════
+-//  COMMUNITY BADGE
+-// ═══════════════════════════════════════════════
+-function setCB(id, votes, done, thresh){
+-  var e = ge(id+"-cb"); if(!e) return;
+-  if(done){ e.className="cb cb-ok"; e.textContent="✅ Community Confirmed"; }
+-  else if(votes>=1){ e.className="cb cb-wait"; e.textContent="⚠️ Awaiting ("+votes+"/"+(thresh||3)+")"; }
+-  else{ e.className="cb cb-none"; e.textContent="⬜ No votes yet"; }
+-}
+-
+-// ═══════════════════════════════════════════════
+-//  ADMIN
+-// ═══════════════════════════════════════════════
+-var isAdmin = sessionStorage.getItem("adm")==="1";
+-if(isAdmin) ge("admin-bar").classList.add("show");
+-
+-function checkAdmin(){
+-  if(isAdmin) return true;
+-  var pw=prompt("🔐 Admin password:");
+-  if(pw===ADMIN_PASS){ isAdmin=true; sessionStorage.setItem("adm","1"); ge("admin-bar").classList.add("show"); toast("🔐 Admin access granted"); return true; }
+-  toast("❌ Wrong password"); return false;
+-}
+-function adminLogout(){ if(!confirm("Exit admin?")) return; isAdmin=false; sessionStorage.removeItem("adm"); ge("admin-bar").classList.remove("show"); toast("Logged out"); }
+-
+-// ═══════════════════════════════════════════════
+-//  NOTIFICATIONS
+-// ═══════════════════════════════════════════════
+-var nOn=false, lnk="";
+-function initNotif(){
+-  if(!("Notification" in window)) return;
+-  if(Notification.permission==="granted"){ ge("notif-banner").style.display="none"; startNotif(); }
+-  else if(Notification.permission==="default") ge("notif-banner").classList.add("show");
+-}
+-function reqNotif(){
+-  ge("notif-btn").textContent="...";
+-  Notification.requestPermission().then(function(p){
+-    if(p==="granted"){ ge("notif-banner").classList.remove("show"); startNotif(); toast("🔔 Meal reminders on!"); }
+-    else{ ge("notif-st").textContent="Denied — enable in browser settings"; ge("notif-btn").textContent="Enable"; }
+-  });
+-}
+-function startNotif(){ if(nOn) return; nOn=true; chkMeal(); setInterval(chkMeal,60000); }
+-function chkMeal(){
+-  if(Notification.permission!=="granted") return;
+-  var n=new Date(),h=n.getHours(),m=n.getMinutes(),k=h+":"+m;
+-  if(k===lnk) return;
+-  [{h:7,m:30,t:"🍳 Breakfast is served!",b:"Head to mess!"},{h:12,m:30,t:"🍽️ Lunch time!",b:"Mess open for Lunch!"},{h:17,m:0,t:"☕ Snacks time!",b:"Snacks at mess!"},{h:19,m:30,t:"🌙 Dinner ready!",b:"Dinner served at mess!"}]
+-  .forEach(function(x){ if(h===x.h&&m===x.m){ new Notification(x.t,{body:x.b}); lnk=k; } });
+-}
+-
+-// ═══════════════════════════════════════════════
+-//  TICKER
+-// ═══════════════════════════════════════════════
+-db.ref("actLog").orderByChild("ts").limitToLast(20).on("value",function(snap){
+-  var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
+-  if(!a.length) return;
+-  var h=a.map(function(x){ return '<span class="ti"><b>'+ts(x.ts)+'</b> '+esc(x.msg)+'</span>'; }).join('');
+-  ge("ttrack").innerHTML=h+h;
+-});
+-function logAct(msg){ db.ref("actLog").push({msg:msg,ts:Date.now()}); }
+-
+-// ═══════════════════════════════════════════════
+-//  MESS MENU
+-// ═══════════════════════════════════════════════
+-var bf13={Monday:"Vada+Sambar+Chutney+Shavige",Tuesday:"Poha+Fruits+Chowchow Bath+Chutney",Wednesday:"Plain Dosa+Aloo+Chutney+Egg",Thursday:"Bisi Belle Bath+Bread Jam+Fruits",Friday:"Green Moong Dosa+Oats+Chutney",Saturday:"Tomato Bath+Puliyogare+Chutney",Sunday:"Masala Dosa+Aloo+Chutney"};
+-var bf24={Monday:"Millets Khichdi+Vada+Sambar+Idly",Tuesday:"Lemon Rice+Bread Jam+Fruits",Wednesday:"Ragi Dosa+Dalia+Tomato Chutney+Egg",Thursday:"Onion Uthappam+Mangalore Bajji+Chutney",Friday:"Dal Khichdi+Dosa+Chutney",Saturday:"Pongal+Bread Jam+Fruits",Sunday:"Set Dosa+Chutney"};
+-var dm={Monday:{L:"Poori/Ragi Ball+Rice+Drumstick+Channa+Curd",S:"Cutlet+Tea",D:"Dal Makhni+Rice+Dal+Veg"},Tuesday:{L:"Methi Chapathi+Rice+Dal+Veg Pulav+Curd",S:"Kabuli Husli+Tea",D:"Soyabean+Radish Sambhar+Chapati"},Wednesday:{L:"Chapathi/Ragi+Rice+Paneer+Sprouts Sambhar",S:"Samosa+Tea",D:"Chapathi+Rice+Aloo+Rasam"},Thursday:{L:"Paratha+Rajma+Jeera Rice+Pudina Rice+Curd",S:"Vada Pav+Tea",D:"Chapathi+Egg Curry+Dal Palak+Salad"},Friday:{L:"Palak Chapati+Bhindi+Chicken Biryani+Curd",S:"Bhel Puri+Tea",D:"Chapathi+Rice+Dal+Veg"},Saturday:{L:"Chapathi+Rice+Dal+Mix Veg Beans+Curd",S:"Masala Vada+Tea",D:"Chapathi+Dal+Veg+Salad"},Sunday:{L:"Mushroom/Paneer Biryani+Salad",S:"Pav Bhaji+Tea",D:"Chapathi+Beetroot Palya+Veg"}};
+-var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+-function wkPat(d){ var fd=new Date(d.getFullYear(),d.getMonth(),1),wk=Math.ceil((d.getDate()+fd.getDay())/7); return(wk===1||wk===3)?"w13":"w24"; }
+-function nxMeal(){ var n=new Date(),h=n.getHours(),day=DAYS[n.getDay()]; if(h>=22){var t=new Date(n);t.setDate(t.getDate()+1);return{date:t,day:DAYS[t.getDay()],meal:"Breakfast"};} if(h>=18)return{date:n,day:day,meal:"Dinner"}; if(h>=15)return{date:n,day:day,meal:"Snacks"}; if(h>=10)return{date:n,day:day,meal:"Lunch"}; return{date:n,day:day,meal:"Breakfast"}; }
+-function getMnu(date,day,meal){ if(meal==="Breakfast") return (wkPat(date)==="w13"?bf13:bf24)[day]||""; var k={Lunch:"L",Snacks:"S",Dinner:"D"}[meal]; return dm[day]?dm[day][k]||"":""; }
+-function updMess(){ var n=nxMeal(); setText("mess-meal","Next: "+n.meal); setText("mess-menu",getMnu(n.date,n.day,n.meal)); }
+-updMess(); setInterval(updMess,60000);
+-
+-// ═══════════════════════════════════════════════
+-//  VOTING ENGINE
+-//  Uses atomic _voteCount so confirmed state is reliable
+-// ═══════════════════════════════════════════════
+-var confirmed = {};
+-
+-function doVote(place, value, thresh){
+-  var dvRef = db.ref(place+"_dv/"+devId);
+-  dvRef.once("value",function(snap){
+-    if(snap.exists()) return toast("Already voted for "+place);
+-    dvRef.set({v:value,ts:Date.now()});
+-
+-    db.ref(place+"_votedFor").once("value",function(vf){
+-      var cur=vf.val();
+-      if(cur && cur!==value){
+-        dvRef.remove();
+-        return toast("Vote in progress for: "+cur);
+-      }
+-      if(!cur) db.ref(place+"_votedFor").set(value);
+-
+-      db.ref(place+"_voteCount").transaction(function(c){ return (c||0)+1; },function(err,ok,sn){
+-        if(err||!ok||!sn){ dvRef.remove(); return toast("Error voting, try again"); }
+-        var count=sn.val(), rem=thresh-count;
+-        if(count>=thresh){
+-          console.log("CONFIRMING:", place, value);
+-            db.ref(place).set({status:value,ts:Date.now()},function(){
+-            db.ref(place+"_voteCount").remove();
+-            db.ref(place+"_votedFor").remove();
+-            db.ref(place+"_dv").remove();
+-            db.ref(place+"_pend").remove();
+-          });
+-          logAct("✅ "+thresh+"/"+thresh+" confirmed: "+place+" → "+value);
+-          toast("✅ Community confirmed!");
+-        } else {
+-          db.ref(place+"_pend").set("Awaiting "+rem+" more confirmation(s)");
+-          logAct("🗳️ "+place+" vote "+count+"/"+thresh+": "+value);
+-          toast("Vote recorded! "+rem+" more needed.");
+-        }
+-      });
+-    });
+-  });
+-  closeModal();
+-}
+-
+-function adminSet(place, value){
+-  if(!checkAdmin()) return;
+-  db.ref(place).set({status:value,ts:Date.now()});
+-  db.ref(place+"_voteCount").remove();
+-  db.ref(place+"_votedFor").remove();
+-  db.ref(place+"_dv").remove();
+-  db.ref(place+"_pend").remove();
+-  logAct("🔐 Admin set: "+place+" → "+value);
+-  toast("✅ Override applied!"); closeModal();
+-}
+-
+-// ═══════════════════════════════════════════════
+-//  STATUS LISTENERS
+-// ═══════════════════════════════════════════════
+-function listenPlace(place, thresh, onStatus){
+-  db.ref(place).on("value",function(snap){
+-    var d=snap.val();
+-    if(!d||!d.status){ confirmed[place]=false; setCB(place,0,false,thresh); onStatus(null); return; }
+-    confirmed[place]=true;
+-    setCB(place,0,true,thresh);
+-    onStatus(d);
+-  });
+-  db.ref(place+"_voteCount").on("value",function(snap){
+-    var c=snap.val()||0;
+-    var e=ge(place+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
+-    if(!confirmed[place]) setCB(place,c,false,thresh);
+-  });
+-  db.ref(place+"_pend").on("value",function(snap){
+-    var e=ge(place+"-pend"); if(e) e.textContent=(!confirmed[place]&&snap.val())?snap.val():"";
+-  });
+-}
+-
+-
+-// MESS
+-listenPlace("mess",T_MESS,function(d){
+-  console.log("MESS LISTENER FIRED:", d);
+-  var av=ge("mess-avail"),tEl=ge("mess-ts");
+-
+-  if(!d){
+-    paintCard("mess-card","dark");
+-    av.className="sbdg s-gray";
+-    av.textContent="Not Updated";
+-    if(tEl) tEl.textContent="";
+-    return;
+-  }
+-
+-  var st = (d.status || "").trim().toLowerCase();
+-
+-  if(st === "food available"){
+-    paintCard("mess-card","green");
+-    av.className="sbdg s-green";
+-    av.textContent="✅ Food Available";
+-  }
+-  else if(st === "food not available"){
+-    paintCard("mess-card","red");
+-    av.className="sbdg s-red";
+-    av.textContent="❌ Food Not Available";
+-  }
+-  else{
+-    paintCard("mess-card","dark");
+-    av.className="sbdg s-gray";
+-    av.textContent=d.status || "Not Updated";
+-  }
+-
+-  if(tEl) tEl.textContent=ago(d.ts);
+-});
+-
+-
+-// GYM
+-listenPlace("gym",T_GYM,function(d){
+-  var s=ge("gym-status"),tEl=ge("gym-ts");
+-
+-  if(!d){
+-    paintCard("gym-card","dark");
+-    s.className="sbdg s-gray";
+-    s.textContent="Not Updated";
+-    if(tEl) tEl.textContent="";
+-    return;
+-  }
+-
+-  var st = (d.status || "").trim();
+-
+-  if(st === "Open · Free"){
+-    paintCard("gym-card","green");
+-    s.className="sbdg s-green";
+-    s.textContent="✅ Open · Free";
+-  }
+-  else if(st === "Open · Crowded"){
+-    paintCard("gym-card","amber");
+-    s.className="sbdg s-amber";
+-    s.textContent="⚠️ Crowded";
+-  }
+-  else if(st === "Closed"){
+-    paintCard("gym-card","red");
+-    s.className="sbdg s-red";
+-    s.textContent="🔒 Closed";
+-  }
+-  else{
+-    paintCard("gym-card","dark");
+-    s.className="sbdg s-gray";
+-    s.textContent=st || "Not Updated";
+-  }
+-
+-  if(tEl) tEl.textContent=ago(d.ts);
+-});
+-
+-
+-// NESCAFE
+-listenPlace("nescafe",T_NESCAFE,function(d){
+-  var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
+-  if(!d){ paintCard("nescafe-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+-  if(d.status==="Open"){ paintCard("nescafe-card","green"); s.className="sbdg s-green"; s.textContent="✅ Open"; }
+-  else { paintCard("nescafe-card","red"); s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
+-  if(tEl) tEl.textContent=ago(d.ts);
+-});
+-
+-// NANDINI
+-listenPlace("nandini",T_NANDINI,function(d){
+-  var s=ge("nandini-avail"),tEl=ge("nandini-ts");
+-  if(!d){ paintCard("nandini-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+-  if(d.status==="Open"){ paintCard("nandini-card","green"); s.className="sbdg s-green"; s.textContent="✅ Open"; }
+-  else { paintCard("nandini-card","red"); s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
+-  if(tEl) tEl.textContent=ago(d.ts);
+-});
+-
+-// BADMINTON
+-listenPlace("bad",T_BAD,function(d){
+-  var s=ge("bad-avail"),tEl=ge("bad-ts");
+-  if(!d||!s){ paintCard("bad-card","dark"); return; }
+-  var st=d.status||"Not Updated";
+-  if(st==="Full"){ paintCard("bad-card","red"); s.className="sbdg s-red"; }
+-  else if(st.includes("1")||st.includes("2")){ paintCard("bad-card","amber"); s.className="sbdg s-amber"; }
+-  else { paintCard("bad-card","green"); s.className="sbdg s-green"; }
+-  s.textContent=st;
+-  if(tEl) tEl.textContent=ago(d.ts);
+-});
+-
+-// DOCTOR ON CAMPUS
+-listenPlace("doc",T_DOC,function(d){
+-  var s=ge("doc-avail"),tEl=ge("doc-ts");
+-  if(!d){ paintCard("doc-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
+-  if(d.status==="On Campus"){ paintCard("doc-card","green"); s.className="sbdg s-green"; s.textContent="✅ On Campus"; }
+-  else { paintCard("doc-card","red"); s.className="sbdg s-red"; s.textContent="❌ Not Available"; }
+-  if(tEl) tEl.textContent=ago(d.ts);
+-});
+-
+-// Suggestions
+-db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numChildren()||0)+" suggestion(s)"); });
+-
+-// ═══════════════════════════════════════════════
+-//  FACULTY GRID
+-// ═══════════════════════════════════════════════
+-var facConf = {};  // tracks which faculty cards are confirmed
+-
+-function buildFacultyGrid(){
+-  var grid = ge("faculty-grid");
+-  grid.innerHTML = FACULTY.map(function(name,i){
+-    var key = "fac_"+i;
+-    var short = name.replace(/^(Dr\.|Prof\.)\s/,"");
+-    return '<div class="card" id="'+key+'-card" onclick="openFacModal('+i+')" style="min-width:0;">'+
+-      '<div class="ch"><span class="ct" style="font-size:0.82em;">👤 '+esc(short)+'</span></div>'+
+-      '<span class="sbdg s-gray" id="'+key+'-status">Not Updated</span>'+
+-      '<div class="cb cb-none" id="'+key+'-cb" style="font-size:0.62em;">⬜ No votes</div>'+
+-      '<div class="vc" id="'+key+'-vc"></div>'+
+-      '<div class="tc" id="'+key+'-ts"></div>'+
+-    '</div>';
+-  }).join('');
+-
+-  // Listen to each faculty
+-  FACULTY.forEach(function(name,i){
+-    var key = "fac_"+i;
+-    listenFaculty(key, T_PROF);
+-  });
+-}
+-
+-function listenFaculty(key, thresh){
+-  db.ref(key).on("value",function(snap){
+-    var d=snap.val();
+-    var s=ge(key+"-status"), tEl=ge(key+"-ts");
+-    if(!d||!d.status){
+-      facConf[key]=false;
+-      paintCard(key+"-card","dark");
+-      if(s){ s.className="sbdg s-gray"; s.textContent="Not Updated"; }
+-      setCB(key,0,false,thresh);
+-      return;
+-    }
+-    facConf[key]=true;
+-    setCB(key,0,true,thresh);
+-    var st=d.status;
+-    if(st==="In Class"){ paintCard(key+"-card","green"); if(s){ s.className="sbdg s-green"; s.textContent="🏫 In Class"; } }
+-    else if(st==="In Cabin"){ paintCard(key+"-card","teal"); if(s){ s.className="sbdg s-teal"; s.textContent="🚪 In Cabin"; } }
+-    else if(st==="Admin"){ paintCard(key+"-card","amber"); if(s){ s.className="sbdg s-amber"; s.textContent="🏢 Admin"; } }
+-    else if(st==="On Leave"){ paintCard(key+"-card","red"); if(s){ s.className="sbdg s-red"; s.textContent="🏖️ On Leave"; } }
+-    else { paintCard(key+"-card","blue"); if(s){ s.className="sbdg s-blue"; s.textContent=st; } }
+-    if(tEl) tEl.textContent=ago(d.ts);
+-  });
+-  db.ref(key+"_voteCount").on("value",function(snap){
+-    var c=snap.val()||0;
+-    var e=ge(key+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
+-    if(!facConf[key]) setCB(key,c,false,thresh);
+-  });
+-}
+-
+-buildFacultyGrid();
+-
+-// ═══════════════════════════════════════════════
+-//  MODAL
+-// ═══════════════════════════════════════════════
+-function adminRow(place, options){
+-  if(!isAdmin) return '';
+-  var btns = options.map(function(o){
+-    return '<button class="adm-btn" onclick="adminSet(\''+place+'\',\''+o.v+'\')">'+o.l+'</button>';
+-  }).join('');
+-  return '<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+btns+'</div></div>';
+-}
+-
+-function openModal(place){
+-  var h='<div class="mh"><span>';
+-
+-  if(place==='mess'){
+-    h+='🍽️ Mess</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_MESS+' confirmations</p>';
+-    h+='<div class="bst">'+
+-      '<button class="mb g" onclick="doVote(\'mess\',\'Food Available\','+T_MESS+')">✅ Food Available</button>'+
+-      '<button class="mb r" onclick="doVote(\'mess\',\'Food Not Available\','+T_MESS+')">❌ Food Not Available</button>'+
+-    '</div>'+
+-    adminRow('mess',[{v:'Food Available',l:'✅ Force Available'},{v:'Food Not Available',l:'❌ Force Not Available'}])+
+-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-
+-  } else if(place==='gym'){
+-    h+='🏋️ Gym</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<div class="bst">'+
+-      '<button class="mb g" onclick="doVote(\'gym\',\'Open · Free\','+T_GYM+')">✅ Open · Free</button>'+
+-      '<button class="mb a" onclick="doVote(\'gym\',\'Open · Crowded\','+T_GYM+')">⚠️ Open · Crowded</button>'+
+-      '<button class="mb r" onclick="doVote(\'gym\',\'Closed\','+T_GYM+')">🔒 Closed</button>'+
+-    '</div>'+
+-    adminRow('gym',[{v:'Open · Free',l:'✅ Free'},{v:'Open · Crowded',l:'⚠️ Crowded'},{v:'Closed',l:'🔒 Closed'}])+
+-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-
+-  } else if(place==='nescafe'){
+-    h+='☕ Nescafé</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NESCAFE+' confirmations</p>';
+-    h+='<div class="bst">'+
+-      '<button class="mb g" onclick="doVote(\'nescafe\',\'Open\','+T_NESCAFE+')">✅ Open</button>'+
+-      '<button class="mb r" onclick="doVote(\'nescafe\',\'Closed\','+T_NESCAFE+')">🔒 Closed</button>'+
+-    '</div>'+
+-    adminRow('nescafe',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
+-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-
+-  } else if(place==='nandini'){
+-    h+='🥛 Nandini</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NANDINI+' confirmations</p>';
+-    h+='<div class="bst">'+
+-      '<button class="mb g" onclick="doVote(\'nandini\',\'Open\','+T_NANDINI+')">✅ Open</button>'+
+-      '<button class="mb r" onclick="doVote(\'nandini\',\'Closed\','+T_NANDINI+')">🔒 Closed</button>'+
+-    '</div>'+
+-    adminRow('nandini',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
+-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-
+-  } else if(place==='bad'){
+-    h+='🏸 Badminton</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">How many courts FREE? (needs '+T_BAD+')</p>';
+-    h+='<div class="bst">'+
+-      '<button class="mb g" onclick="doVote(\'bad\',\'4 Free\','+T_BAD+')">🟢 All 4 Free</button>'+
+-      '<button class="mb g" onclick="doVote(\'bad\',\'3 Free\','+T_BAD+')">🟢 3 Free</button>'+
+-      '<button class="mb a" onclick="doVote(\'bad\',\'2 Free\','+T_BAD+')">🟡 2 Free</button>'+
+-      '<button class="mb a" onclick="doVote(\'bad\',\'1 Free\','+T_BAD+')">🟡 1 Free</button>'+
+-      '<button class="mb r" onclick="doVote(\'bad\',\'Full\','+T_BAD+')">🔴 All Full</button>'+
+-    '</div>'+
+-    adminRow('bad',[{v:'4 Free',l:'All 4 Free'},{v:'Full',l:'Full'}])+
+-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-
+-  } else if(place==='doc'){
+-    h+='🏥 Doctor on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Is the doctor on campus? (needs '+T_DOC+')</p>';
+-    h+='<div class="bst">'+
+-      '<button class="mb g" onclick="doVote(\'doc\',\'On Campus\','+T_DOC+')">✅ Yes — Doctor on Campus</button>'+
+-      '<button class="mb r" onclick="doVote(\'doc\',\'Not Available\','+T_DOC+')">❌ No — Not Available</button>'+
+-    '</div>'+
+-    adminRow('doc',[{v:'On Campus',l:'✅ On Campus'},{v:'Not Available',l:'❌ Not Available'}])+
+-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-
+-  } else if(place==='sug'){
+-    h+='💡 Suggestions</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-    h+='<textarea class="mi" id="sug-in" rows="4" placeholder="Share an idea or bug report..."></textarea>';
+-    h+='<div class="bst"><button class="mb g" onclick="doSug()">Submit</button></div>';
+-    h+='<hr style="border:none;border-top:1px solid #2a2a3e;margin:14px 0;">';
+-    h+='<div id="sug-feed" style="max-height:200px;overflow-y:auto;"></div>';
+-    h+='<button class="mb x" style="margin-top:10px;" onclick="closeModal()">Close</button>';
+-    setTimeout(function(){
+-      db.ref("suggestions").orderByChild("ts").limitToLast(10).once("value",function(snap){
+-        var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
+-        var e=ge("sug-feed"); if(!e) return;
+-        e.innerHTML=a.length?a.map(function(s){ return '<div style="background:rgba(255,255,255,0.03);border:1px solid #2a2a3e;border-radius:9px;padding:9px;margin-bottom:7px;font-size:0.8em;color:#94a3b8;">'+esc(s.text||'')+'<div style="font-size:0.7em;color:#444;margin-top:3px;">'+ago(s.ts)+'</div></div>'; }).join('') : '<p style="color:#444;text-align:center;padding:10px;">No suggestions yet</p>';
+-      });
+-    },100);
+-  }
+-
+-  ge("mbox").innerHTML=h;
+-  ge("modal").classList.add("active");
+-}
+-
+-function openFacModal(idx){
+-  var key="fac_"+idx, name=FACULTY[idx];
+-  var h='<div class="mh"><span>👤 '+esc(name)+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-  h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Where is '+esc(name.split(' ')[1]||name)+' right now? (needs '+T_PROF+')</p>';
+-  h+='<div class="bst">'+
+-    '<button class="mb g" onclick="doVote(\''+key+'\',\'In Class\','+T_PROF+')">🏫 In Class</button>'+
+-    '<button class="mb t" onclick="doVote(\''+key+'\',\'In Cabin\','+T_PROF+')">🚪 In Cabin</button>'+
+-    '<button class="mb a" onclick="doVote(\''+key+'\',\'Admin\','+T_PROF+')">🏢 Admin Block</button>'+
+-    '<button class="mb r" onclick="doVote(\''+key+'\',\'On Leave\','+T_PROF+')">🏖️ On Leave</button>'+
+-  '</div>';
+-  if(isAdmin){
+-    h+='<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+
+-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'In Class\')">In Class</button>'+
+-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'In Cabin\')">In Cabin</button>'+
+-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'Admin\')">Admin</button>'+
+-      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'On Leave\')">On Leave</button>'+
+-    '</div></div>';
+-  }
+-  h+='<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+-  ge("mbox").innerHTML=h;
+-  ge("modal").classList.add("active");
+-}
+-
+-function closeModal(){ ge("modal").classList.remove("active"); }
+-function bgClose(e){ if(e.target===ge("modal")) closeModal(); }
+-
+-// ═══════════════════════════════════════════════
+-//  SUGGESTIONS
+-// ═══════════════════════════════════════════════
+-function doSug(){
+-  var t=(ge("sug-in")||{}).value||""; t=t.trim();
+-  if(!t) return alert("Please enter something");
+-  db.ref("suggestions").push({text:t,ts:Date.now()});
+-  logAct("💡 Suggestion submitted");
+-  toast("Thanks!"); closeModal();
+-}
+-
+-// ═══════════════════════════════════════════════
+-//  ANNOUNCEMENTS
+-// ═══════════════════════════════════════════════
+-function openAnnPost(){
+-  if(!checkAdmin()) return;
+-  var h='<div class="mh"><span>📢 Post Announcement</span><button class="mx" onclick="closeModal()">✕</button></div>';
+-  h+='<textarea class="mi" id="ann-in" rows="4" placeholder="Announcement text..."></textarea>';
+-  h+='<select class="msel" id="ann-tag"><option value="general">General</option><option value="mess">🍛 Mess</option><option value="event">🎉 Event</option><option value="academic">📚 Academic</option></select>';
+-  h+='<div class="bst"><button class="mb g" onclick="postAnn()">Post Announcement</button><button class="mb x" onclick="closeModal()">Cancel</button></div>';
+-  ge("mbox").innerHTML=h; ge("modal").classList.add("active");
+-}
+-function postAnn(){
+-  var t=(ge("ann-in")||{}).value||""; t=t.trim();
+-  var tag=(ge("ann-tag")||{}).value||"general";
+-  if(!t) return alert("Please enter text");
+-  db.ref("announcements").push({text:t,tag:tag,ts:Date.now()});
+-  logAct("📢 Announcement posted");
+-  toast("📢 Posted!"); closeModal();
+-}
+-function delAnn(id){ if(!checkAdmin()) return; if(!confirm("Delete?")) return; db.ref("announcements/"+id).remove(); toast("Deleted"); }
+-function cleanAnn(){ db.ref("announcements").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>ANN_EXP) db.ref("announcements/"+c.key).remove(); }); }); }
+-cleanAnn(); setInterval(cleanAnn,300000);
+-
+-db.ref("announcements").orderByChild("ts").on("value",function(snap){
+-  var posts=[],now=Date.now();
+-  snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<ANN_EXP) posts.push({id:c.key,...d}); });
+-  posts.reverse();
+-  var con=ge("ann-list");
+-  if(!posts.length){ con.innerHTML='<div class="ann-empty">No announcements yet</div>'; return; }
+-  con.innerHTML=posts.map(function(p){
+-    var exp=Math.ceil((ANN_EXP-(now-p.ts))/60000);
+-    var expTxt=exp>60?Math.ceil(exp/60)+"hr left":exp+"m left";
+-    return '<div class="ann-card"><div class="ann-txt">'+esc(p.text)+'</div>'+
+-      '<div class="ann-meta"><span class="ann-tag tag-'+p.tag+'">'+p.tag+'</span><span class="ann-ts">'+ago(p.ts)+'</span><span class="ann-ts" style="color:#333;">⏱ '+expTxt+'</span>'+
+-      (isAdmin?'<button class="ann-del" onclick="delAnn(\''+p.id+'\')">🗑</button>':'')+
+-      '</div></div>';
+-  }).join('');
+-});
+-
+-// ═══════════════════════════════════════════════
+-//  IMMEDIATE UPDATES + DOWNVOTES
+-// ═══════════════════════════════════════════════
+-db.ref("immediateUpdates").orderByChild("ts").limitToLast(10).on("value",function(snap){
+-  var sec=ge("imm-wrap"),con=ge("imm-list"),posts=[];
+-  snap.forEach(function(c){ posts.push({id:c.key,...c.val()}); });
+-  posts.reverse();
+-  if(!posts.length){ sec.style.display="none"; return; }
+-  sec.style.display="block";
+-  con.innerHTML=posts.map(function(p){
+-    var dv=p.downvotes||0,dvd=!!localStorage.getItem("idv_"+p.id);
+-    return '<div class="imm-card">'+esc(p.text)+
+-      '<div class="imm-meta">🔴 Crowd verified · '+ago(p.ts)+
+-      ' <span style="color:#92400e;">'+dv+'/5 downvotes</span>'+
+-      '<button class="dv-btn" onclick="'+(dvd?'toast(\'Already downvoted\')':'dvImm(\''+p.id+'\')')+'" '+(dvd?'style="opacity:0.4;"':'')+'>👎</button>'+
+-      (isAdmin?'<button class="ann-del" onclick="admDel(\''+p.id+'\')">🗑</button>':'')+
+-      '</div></div>';
+-  }).join('');
+-});
+-
+-function dvImm(id){
+-  var k="idv_"+id; if(localStorage.getItem(k)) return toast("Already downvoted");
+-  localStorage.setItem(k,"1");
+-  db.ref("immediateUpdates/"+id).transaction(function(d){ if(!d) return d; d.downvotes=(d.downvotes||0)+1; return d; },function(err,ok,snap){
+-    if(!snap) return; var d=snap.val();
+-    if(d&&d.downvotes>=IMM_DV){ db.ref("immediateUpdates/"+id).remove(); logAct("🗑️ Update removed by community"); toast("Post removed by community"); }
+-    else toast("Downvoted ("+(d?d.downvotes:1)+"/5)");
+-  });
+-}
+-function admDel(id){ if(!checkAdmin()) return; db.ref("immediateUpdates/"+id).remove(); toast("Deleted"); }
+-
+-// ═══════════════════════════════════════════════
+-//  HEARTBEAT
+-// ═══════════════════════════════════════════════
+-function updateCC(){ var v=ge("hb-txt").value,c=ge("chct"); c.textContent=v.length+" / 80"; c.className="chct"+(v.length>70?" warn":""); }
+-function postHB(){
+-  var t=ge("hb-txt").value.trim();
+-  if(!t) return alert("Write something"); if(t.length>80) return alert("Max 80 chars");
+-  db.ref("heartbeat").push({text:t,ts:Date.now(),upvotes:0,graduated:false});
+-  logAct("💗 Heartbeat: \""+t.slice(0,28)+(t.length>28?"…":"")+"\"");
+-  ge("hb-txt").value=""; ge("chct").textContent="0 / 80";
+-}
+-function uvHB(id){
+-  var k="hbv_"+id; if(localStorage.getItem(k)) return toast("Already upvoted");
+-  localStorage.setItem(k,"1");
+-  db.ref("heartbeat/"+id).transaction(function(d){ if(!d) return d; d.upvotes=(d.upvotes||0)+1; return d; },function(err,ok,snap){
+-    if(!snap) return; var d=snap.val();
+-    if(d&&d.upvotes>=HB_VOTES&&!d.graduated){
+-      db.ref("immediateUpdates").push({text:d.text,ts:Date.now()});
+-      db.ref("heartbeat/"+id).update({graduated:true});
+-      logAct("🔴 Heartbeat graduated!");
+-      setTimeout(function(){ db.ref("heartbeat/"+id).remove(); },2500);
+-    }
+-  });
+-}
+-function cleanHB(){ db.ref("heartbeat").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated&&(now-d.ts)>HB_TTL) db.ref("heartbeat/"+c.key).remove(); }); }); }
+-cleanHB(); setInterval(cleanHB,30000);
+-
+-db.ref("heartbeat").on("value",function(snap){
+-  var feed=ge("hb-feed"),now=Date.now(),posts=[];
+-  snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated) posts.push({id:c.key,...d}); });
+-  posts.sort(function(a,b){ return b.ts-a.ts; });
+-  if(!posts.length){ feed.innerHTML='<div class="hb-empty">No active posts · be the first</div>'; return; }
+-  feed.innerHTML=posts.map(function(p){
+-    var voted=!!localStorage.getItem("hbv_"+p.id);
+-    var rem=Math.max(0,HB_TTL-(now-p.ts)),pct=(rem/HB_TTL)*100,mins=Math.ceil(rem/60000),uv=p.upvotes||0;
+-    return '<div class="hb-card"><div style="flex:1;"><div class="hb-txt">'+esc(p.text)+'</div>'+
+-      '<div style="font-size:0.62em;color:#7f3040;margin-top:3px;">⏱ '+mins+'m left · '+uv+'/'+HB_VOTES+' upvotes</div>'+
+-      '<div class="tbar"><div class="tfil" style="width:'+pct+'%"></div></div></div>'+
+-      '<div class="hb-r"><button class="uv-btn'+(voted?' voted':'')+'" onclick="'+(voted?'toast(\'Already upvoted\')':'uvHB(\''+p.id+'\')')+'">👍 '+uv+'</button></div></div>';
+-  }).join('');
+-});
+-
+-// ═══════════════════════════════════════════════
+-//  INIT
+-// ═══════════════════════════════════════════════
+-initNotif();
+-</script>
+-</body>
+-</html>
++<!DOCTYPE html>
++<html>
++<head>
++<meta charset="UTF-8">
++<meta name="viewport" content="width=device-width, initial-scale=1.0">
++<title>FundBASEU Tracker</title>
++<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
++<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
++<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
++<style>
++*{margin:0;padding:0;box-sizing:border-box;}
++body{font-family:'DM Sans',sans-serif;background:#0f0f1a;min-height:100vh;padding:15px 15px 90px;color:#fff;}
++
++header{text-align:center;margin-bottom:12px;padding-top:8px;}
++header h1{font-family:'Space Grotesk',sans-serif;font-size:1.9em;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;margin-bottom:4px;}
++header p{font-size:0.8em;color:#666;margin-bottom:8px;}
++.upd-link{display:inline-block;background:rgba(167,139,250,0.15);padding:6px 14px;border-radius:20px;color:#a78bfa;text-decoration:none;font-size:0.8em;font-weight:600;border:1px solid rgba(167,139,250,0.3);}
++
++#admin-bar{display:none;position:fixed;top:10px;right:10px;background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);color:#f87171;padding:4px 12px;border-radius:20px;font-size:0.7em;font-weight:700;z-index:600;cursor:pointer;}
++#admin-bar.show{display:block;}
++
++.notif-banner{display:none;background:linear-gradient(135deg,#1e1b4b,#1e3a5f);border:1px solid #4f46e5;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:0.8em;color:#a5b4fc;align-items:center;gap:10px;flex-wrap:wrap;}
++.notif-banner.show{display:flex;}
++.notif-btn{background:#4f46e5;border:none;color:white;padding:6px 14px;border-radius:8px;font-size:0.82em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
++
++.ticker-wrap{background:#12121f;border:1px solid #1e1e35;border-radius:12px;padding:7px 12px;margin:10px 0;display:flex;align-items:center;gap:10px;overflow:hidden;}
++.ticker-live{font-family:'Space Grotesk',sans-serif;font-size:0.62em;font-weight:800;color:#ef4444;letter-spacing:1.5px;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;}
++.ldot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:blink 1s infinite;}
++@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
++.ticker-vp{flex:1;overflow:hidden;}
++.ticker-tr{display:flex;white-space:nowrap;animation:tickanim 30s linear infinite;}
++.ticker-tr:hover{animation-play-state:paused;}
++@keyframes tickanim{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
++.ti{font-size:0.75em;color:#64748b;padding-right:40px;}
++.ti b{color:#94a3b8;font-weight:500;}
++
++.stats-bar{display:flex;justify-content:center;gap:28px;margin:12px 0;flex-wrap:wrap;}
++.s-box{text-align:center;}
++.s-num{font-family:'Space Grotesk',sans-serif;font-size:1.7em;font-weight:800;display:block;color:#fff;}
++.s-lbl{font-size:0.72em;color:#555;}
++
++.sec-lbl{font-family:'Space Grotesk',sans-serif;font-size:0.65em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#444;margin:14px 0 8px 2px;}
++
++.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:6px;}
++
++/* ── CARD: base state + transition ── */
++.card{
++  border-radius:16px;padding:14px;
++  cursor:pointer;border:1px solid #242438;
++  transition:background 0.4s ease, border-color 0.4s ease, transform 0.2s, box-shadow 0.2s;
++  -webkit-tap-highlight-color:transparent;
++  position:relative;overflow:hidden;
++  box-shadow:0 4px 18px rgba(0,0,0,0.4);
++  /* default dark */
++  background:#1a1a2e;
++}
++.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.5);}
++.card:active{transform:scale(0.97);}
++
++/* ── CARD COLOR STATES (applied via JS .style directly) ── */
++/* These are templates used by JS — no class switching needed */
++
++.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
++.ct{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#e2e8f0;}
++.ci{font-size:1.3em;}
++
++/* Status badge inside card */
++.sbdg{display:block;padding:5px 10px;border-radius:20px;font-size:0.76em;font-weight:700;margin:3px 0;text-align:center;width:100%;transition:background 0.3s,color 0.3s,border-color 0.3s;}
++
++/* Explicit colour variants — set via JS className */
++.s-green{background:rgba(16,185,129,0.25);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4);}
++.s-red{background:rgba(239,68,68,0.25);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);}
++.s-amber{background:rgba(245,158,11,0.25);color:#fde68a;border:1px solid rgba(245,158,11,0.4);}
++.s-blue{background:rgba(96,165,250,0.25);color:#bfdbfe;border:1px solid rgba(96,165,250,0.4);}
++.s-gray{background:rgba(100,116,139,0.2);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);}
++.s-purple{background:rgba(167,139,250,0.2);color:#ddd6fe;border:1px solid rgba(167,139,250,0.3);}
++.s-teal{background:rgba(20,184,166,0.25);color:#99f6e4;border:1px solid rgba(20,184,166,0.4);}
++
++/* Community confirmation badge */
++.cb{display:inline-flex;align-items:center;gap:4px;font-size:0.67em;font-weight:700;margin-top:5px;padding:3px 9px;border-radius:7px;}
++.cb-ok{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
++.cb-wait{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);}
++.cb-none{background:rgba(100,116,139,0.12);color:#4b5563;border:1px solid rgba(100,116,139,0.2);}
++
++.mc{font-size:0.7em;color:#94a3b8;margin-top:5px;background:rgba(255,255,255,0.04);padding:5px 8px;border-radius:8px;line-height:1.45;}
++.tc{font-size:0.65em;color:#444;margin-top:5px;text-align:center;}
++.vc{font-size:0.65em;color:#6366f1;margin-top:2px;text-align:center;}
++
++/* ANNOUNCEMENTS */
++.ann-wrap{margin-top:14px;border:1px solid rgba(167,139,250,0.22);border-radius:18px;padding:14px;background:#0f0a1a;}
++.ann-title{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#a78bfa;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
++.ann-card{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.18);border-radius:10px;padding:10px 12px;margin-bottom:8px;animation:fu .3s ease;}
++.ann-txt{font-size:0.85em;color:#e2e8f0;line-height:1.45;}
++.ann-meta{display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;}
++.ann-tag{font-size:0.65em;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;}
++.tag-mess{background:rgba(245,158,11,0.2);color:#fbbf24;}
++.tag-event{background:rgba(96,165,250,0.2);color:#93c5fd;}
++.tag-academic{background:rgba(16,185,129,0.2);color:#34d399;}
++.tag-general{background:rgba(167,139,250,0.2);color:#c4b5fd;}
++.ann-ts{font-size:0.65em;color:#555;}
++.ann-del{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.65em;cursor:pointer;font-weight:700;}
++.ann-empty{text-align:center;color:#444;font-size:0.8em;padding:14px;}
++.ann-post-btn{display:block;margin:12px auto 0;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.22);color:#a78bfa;padding:5px 14px;border-radius:8px;font-size:0.72em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
++
++/* IMMEDIATE UPDATES */
++.imm-wrap{margin-top:14px;border:1px solid rgba(245,158,11,0.22);border-radius:18px;padding:14px;background:#130f00;}
++.imm-title{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#fbbf24;margin-bottom:10px;}
++.imm-card{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:9px 11px;margin-bottom:8px;font-size:0.82em;color:#fde68a;line-height:1.45;animation:fu .3s ease;}
++.imm-meta{font-size:0.65em;color:#78350f;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
++.dv-btn{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.7em;cursor:pointer;font-weight:700;}
++
++/* HEARTBEAT */
++.hb-wrap{margin-top:14px;border:1px solid rgba(255,77,109,0.22);border-radius:18px;padding:14px;background:#150009;position:relative;overflow:hidden;}
++.hb-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ff4d6d,#ff758c,#ff4d6d);background-size:200%;animation:shimmer 2s infinite;}
++@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
++.hb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
++.hb-tit{font-family:'Space Grotesk',sans-serif;font-size:0.95em;font-weight:800;color:#ff4d6d;display:flex;align-items:center;gap:6px;}
++.pdot{width:8px;height:8px;border-radius:50%;background:#ff4d6d;animation:pulse 1.2s infinite;}
++@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
++.hb-rules{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.18);border-radius:10px;padding:9px 11px;margin:8px 0;font-size:0.72em;color:#fca5a5;line-height:1.7;}
++.hb-rules strong{color:#ff4d6d;display:block;margin-bottom:3px;font-family:'Space Grotesk',sans-serif;}
++.hb-row{display:flex;gap:8px;margin:8px 0 2px;}
++.hb-in{flex:1;background:rgba(255,255,255,0.06);border:1px solid #2a1520;border-radius:10px;padding:9px 11px;color:white;font-size:0.82em;font-family:'DM Sans',sans-serif;outline:none;}
++.hb-in:focus{border-color:#ff4d6d;}
++.hb-in::placeholder{color:#4a2530;}
++.chct{font-size:0.65em;color:#4a2530;text-align:right;margin-bottom:6px;}
++.chct.warn{color:#f59e0b;}
++.btn-hb{background:#ff4d6d;color:white;border:none;border-radius:10px;padding:9px 13px;font-weight:700;font-size:0.82em;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap;}
++.hb-feed{display:flex;flex-direction:column;gap:7px;margin-top:8px;max-height:280px;overflow-y:auto;}
++.hb-card{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.18);border-radius:10px;padding:9px 11px;display:flex;gap:10px;align-items:center;animation:fu .3s ease;}
++@keyframes fu{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
++.hb-txt{font-size:0.82em;color:#fca5a5;flex:1;line-height:1.4;}
++.hb-r{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:42px;}
++.uv-btn{background:rgba(255,77,109,0.15);border:1px solid rgba(255,77,109,0.28);color:#ff4d6d;border-radius:8px;padding:4px 7px;font-size:0.75em;font-weight:700;cursor:pointer;width:100%;text-align:center;}
++.uv-btn.voted{opacity:0.45;cursor:default;}
++.tbar{height:2px;background:rgba(255,77,109,0.12);border-radius:2px;margin-top:5px;overflow:hidden;}
++.tfil{height:100%;background:#ff4d6d;border-radius:2px;transition:width 1s linear;}
++.hb-empty{text-align:center;color:#4a2530;font-size:0.78em;padding:16px;}
++
++/* MODAL */
++.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:flex-end;justify-content:center;}
++.modal.active{display:flex;}
++.mbox{background:#1a1a2e;border-radius:24px 24px 0 0;padding:22px 18px 36px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid #2a2a3e;border-bottom:none;animation:su .28s ease;}
++@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
++.mh{font-family:'Space Grotesk',sans-serif;font-size:1.2em;font-weight:800;color:#e2e8f0;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
++.mx{background:rgba(255,255,255,0.08);border:none;color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.9em;}
++.bst{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
++.mb{padding:13px;border:none;border-radius:11px;font-size:0.92em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
++.mb:active{opacity:0.85;}
++.mb.g{background:#10b981;color:white;}
++.mb.r{background:#ef4444;color:white;}
++.mb.a{background:#f59e0b;color:white;}
++.mb.t{background:#0d9488;color:white;}
++.mb.x{background:#1f2937;color:#6b7280;margin-top:6px;}
++.mi{width:100%;background:rgba(255,255,255,0.06);border:1px solid #2a2a3e;border-radius:10px;padding:11px;color:white;font-size:0.88em;font-family:'DM Sans',sans-serif;outline:none;margin-top:8px;}
++.mi:focus{border-color:#a78bfa;}
++.msel{width:100%;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:10px;padding:11px;color:white;font-size:0.88em;font-family:'DM Sans',sans-serif;outline:none;margin-top:8px;}
++.adm-sec{margin-top:14px;padding-top:12px;border-top:1px solid rgba(239,68,68,0.2);}
++.adm-lbl{font-size:0.72em;color:#ef4444;font-weight:700;margin-bottom:8px;}
++.adm-row{display:flex;flex-wrap:wrap;gap:8px;}
++.adm-btn{flex:1;min-width:80px;padding:9px 8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;border-radius:9px;font-size:0.8em;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;text-align:center;}
++
++.ref-btn{position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:30px;padding:11px 17px;font-size:0.82em;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(102,126,234,0.4);z-index:999;font-family:'Space Grotesk',sans-serif;}
++
++#toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;padding:9px 18px;border-radius:12px;font-size:0.82em;z-index:9999;border:1px solid #334155;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;max-width:92vw;text-align:center;}
++
++@media(max-width:480px){
++  header h1{font-size:1.55em;}
++  .grid{grid-template-columns:1fr 1fr;gap:9px;}
++  .card{padding:11px;}
++  .ct{font-size:0.82em;}
++}
++</style>
++</head>
++<body>
++<div id="toast"></div>
++<div id="admin-bar" onclick="adminLogout()">🔐 Admin · tap to exit</div>
++
++<div class="container">
++  <header>
++    <h1>🎓 FundBASEU Tracker</h1>
++    <p>Real-time campus status · by students, for students</p>
++    <a href="https://sway.cloud.microsoft/CuEoSACHmG0wvSfR?ref=Link&loc=play" target="_blank" class="upd-link">📢 FundBASEU Updates →</a>
++  </header>
++
++  <div class="notif-banner" id="notif-banner">
++    <div style="flex:1;">🔔 Get meal reminders at 7:30am · 12:30pm · 5pm · 7:30pm
++    <div id="notif-st" style="font-size:0.72em;color:#818cf8;margin-top:3px;"></div></div>
++    <button class="notif-btn" id="notif-btn" onclick="reqNotif()">Enable</button>
++  </div>
++
++  <div class="ticker-wrap">
++    <div class="ticker-live"><div class="ldot"></div>LIVE</div>
++    <div class="ticker-vp"><div class="ticker-tr" id="ttrack"><span class="ti"><b>No activity yet...</b></span><span class="ti"><b>No activity yet...</b></span></div></div>
++  </div>
++
++  <div class="stats-bar">
++    <div class="s-box"><span class="s-num" id="liveCount">0</span><span class="s-lbl">👥 Live Now</span></div>
++    <div class="s-box"><span class="s-num" id="totalVis">0</span><span class="s-lbl">📊 Visitors</span></div>
++  </div>
++
++  <div class="sec-lbl">Campus Status</div>
++  <div class="grid">
++
++    <div class="card" id="mess-card" onclick="openModal('mess')">
++      <div class="ch"><span class="ct">🍽️ Mess</span><span class="ci">🍛</span></div>
++      <span class="sbdg s-gray" id="mess-avail">Not Updated</span>
++      <div class="cb cb-none" id="mess-cb">⬜ No votes yet</div>
++      <span class="sbdg s-blue" id="mess-meal" style="margin-top:5px;"></span>
++      <div class="mc" id="mess-menu"></div>
++      <div class="vc" id="mess-vc"></div>
++      <div class="vc" id="mess-pend"></div>
++      <div class="tc" id="mess-ts"></div>
++    </div>
++
++    <div class="card" id="gym-card" onclick="openModal('gym')">
++      <div class="ch"><span class="ct">🏋️ Gym</span><span class="ci">💪</span></div>
++      <span class="sbdg s-gray" id="gym-status">Not Updated</span>
++      <div class="cb cb-none" id="gym-cb">⬜ No votes yet</div>
++      <div class="tc" id="gym-ts"></div>
++    </div>
++
++    <div class="card" id="nescafe-card" onclick="openModal('nescafe')">
++      <div class="ch"><span class="ct">☕ Nescafé</span><span class="ci">🥤</span></div>
++      <span class="sbdg s-gray" id="nescafe-avail">Not Updated</span>
++      <div class="cb cb-none" id="nescafe-cb">⬜ No votes yet</div>
++      <div class="vc" id="nescafe-vc"></div>
++      <div class="vc" id="nescafe-pend"></div>
++      <div class="tc" id="nescafe-ts"></div>
++    </div>
++
++    <div class="card" id="nandini-card" onclick="openModal('nandini')">
++      <div class="ch"><span class="ct">🥛 Nandini</span><span class="ci">🧃</span></div>
++      <span class="sbdg s-gray" id="nandini-avail">Not Updated</span>
++      <div class="cb cb-none" id="nandini-cb">⬜ No votes yet</div>
++      <div class="vc" id="nandini-vc"></div>
++      <div class="vc" id="nandini-pend"></div>
++      <div class="tc" id="nandini-ts"></div>
++    </div>
++
++    <div class="card" id="bad-card" onclick="openModal('bad')">
++      <div class="ch"><span class="ct">🏸 Badminton</span><span class="ci">🎾</span></div>
++      <span class="sbdg s-gray" id="bad-avail">Not Updated</span>
++      <div class="cb cb-none" id="bad-cb">⬜ No votes yet</div>
++      <div class="vc" id="bad-vc"></div>
++      <div class="vc" id="bad-pend"></div>
++      <div class="tc" id="bad-ts"></div>
++    </div>
++
++    <div class="card" id="doc-card" onclick="openModal('doc')">
++      <div class="ch"><span class="ct">🏥 Doctor</span><span class="ci">💊</span></div>
++      <span class="sbdg s-gray" id="doc-avail">Not Updated</span>
++      <div class="cb cb-none" id="doc-cb">⬜ No votes yet</div>
++      <div class="vc" id="doc-vc"></div>
++      <div class="vc" id="doc-pend"></div>
++      <div class="tc" id="doc-ts"></div>
++    </div>
++
++    <div class="card" onclick="openModal('sug')">
++      <div class="ch"><span class="ct">💡 Suggest</span><span class="ci">📝</span></div>
++      <span class="sbdg s-purple">Fixes & Ideas</span>
++      <div class="tc" id="sug-count"></div>
++    </div>
++
++  </div>
++
++  <!-- FACULTY SECTION -->
++  <div class="sec-lbl">Faculty Locator</div>
++  <div class="grid" id="faculty-grid">
++    <!-- rendered by JS -->
++  </div>
++
++  <!-- ANNOUNCEMENTS -->
++  <div class="ann-wrap">
++    <div class="ann-title">📢 Announcements <span style="font-size:0.6em;color:#6b4fa0;font-weight:400;">12hr expiry</span></div>
++    <div id="ann-list"><div class="ann-empty">No announcements yet</div></div>
++    <button class="ann-post-btn" onclick="openAnnPost()">+ Post Announcement (admin only)</button>
++  </div>
++
++  <!-- IMMEDIATE UPDATES -->
++  <div class="imm-wrap" id="imm-wrap" style="display:none;">
++    <div class="imm-title">🔴 Immediate Updates <span style="font-size:0.6em;color:#78350f;font-weight:400;margin-left:4px;">5 downvotes = removed</span></div>
++    <div id="imm-list"></div>
++  </div>
++
++  <!-- HEARTBEAT ZONE -->
++  <div class="hb-wrap">
++    <div class="hb-head">
++      <div class="hb-tit"><div class="pdot"></div>Heartbeat Zone</div>
++      <span style="font-size:0.68em;color:#7f3040;">anonymous · incubation</span>
++    </div>
++    <div class="hb-rules">
++      <strong>📋 How Heartbeat works:</strong>
++      • Post anonymously — max 80 characters<br>
++      • <strong style="color:#ff758c;">5 upvotes</strong> → graduates to 🔴 Immediate Updates<br>
++      • <strong style="color:#ff758c;">Auto-deletes in 10 min</strong> if under 5 upvotes<br>
++      • Use for urgent signals, crowd alerts, campus sightings
++    </div>
++    <div class="hb-row">
++      <input class="hb-in" id="hb-txt" maxlength="80" placeholder="What's happening right now..." oninput="updateCC()">
++      <button class="btn-hb" onclick="postHB()">Post</button>
++    </div>
++    <div class="chct" id="chct">0 / 80</div>
++    <div class="hb-feed" id="hb-feed"><div class="hb-empty">No active posts · be the first</div></div>
++  </div>
++</div>
++
++<button class="ref-btn" onclick="location.reload()">🔄 Refresh</button>
++
++<div class="modal" id="modal" onclick="bgClose(event)">
++  <div class="mbox" id="mbox"></div>
++</div>
++
++<script>
++// ═══════════════════════════════════════════════
++//  CONFIG
++// ═══════════════════════════════════════════════
++var ADMIN_PASS = "fundbaseu2024"; // ← change this
++var T_MESS=3, T_GYM=1, T_NESCAFE=3, T_NANDINI=3, T_BAD=2, T_DOC=2, T_PROF=2;
++var HB_VOTES=5, HB_TTL=600000, IMM_DV=5, ANN_EXP=43200000;
++
++// Faculty list — 12 professors
++var FACULTY = [
++  "Dr.Bidur",
++  "Dr.Megha",
++  "Dr.Irfan",
++  "Dr.Shameer",
++  "Dr.Nageshwar",
++  "Dr.Ishfaq",
++  "Dr.Muzaffar",
++  "Dr.Kasturi",
++  "Dr.Moushmi",
++  "Dr.Sushmita",
++  "Dean",
++  "Dr.Asha"
++];
++
++// ═══════════════════════════════════════════════
++//  FIREBASE
++// ═══════════════════════════════════════════════
++firebase.initializeApp({
++  apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
++  authDomain:"fundbaseu-tracker.firebaseapp.com",
++  databaseURL:"https://fundbaseu-tracker-default-rtdb.firebaseio.com",
++  projectId:"fundbaseu-tracker"
++});
++var db = firebase.database();
++
++var pr = db.ref("presence").push();
++pr.set(true); pr.onDisconnect().remove();
++db.ref("presence").on("value",function(s){ setText("liveCount",s.numChildren()); });
++db.ref("totalVisitors").transaction(function(c){ return (c||0)+1; });
++db.ref("totalVisitors").on("value",function(s){ setText("totalVis",s.val()||0); });
++
++var devId = localStorage.getItem("did") || (function(){ var id="d_"+Math.random().toString(36).slice(2,11); localStorage.setItem("did",id); return id; })();
++
++// ═══════════════════════════════════════════════
++//  HELPERS
++// ═══════════════════════════════════════════════
++function ge(id){ return document.getElementById(id); }
++function setText(id,v){ var e=ge(id); if(e) e.textContent=v; }
++function ago(t){ if(!t) return ""; var m=Math.floor((Date.now()-t)/60000); if(m<1) return "just now"; if(m===1) return "1m ago"; if(m<60) return m+"m ago"; var h=Math.floor(m/60); if(h<24) return h+"hr ago"; return Math.floor(h/24)+"d ago"; }
++function ts(t){ if(!t) return ""; var d=new Date(t); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
++function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
++function toast(msg){ var t=ge("toast"); t.textContent=msg; t.style.opacity="1"; clearTimeout(t._x); t._x=setTimeout(function(){ t.style.opacity="0"; },2800); }
++
++// ═══════════════════════════════════════════════
++//  CARD COLOR — applied directly via style + border
++//  This bypasses ALL CSS specificity issues
++// ═══════════════════════════════════════════════
++var CARD_COLORS = {
++  green:  { bg:"linear-gradient(135deg,#052e16,#064e3b)", border:"#10b981", glow:"rgba(16,185,129,0.3)" },
++  red:    { bg:"linear-gradient(135deg,#450a0a,#7f1d1d)", border:"#ef4444", glow:"rgba(239,68,68,0.3)" },
++  amber:  { bg:"linear-gradient(135deg,#451a03,#78350f)", border:"#f59e0b", glow:"rgba(245,158,11,0.3)" },
++  teal:   { bg:"linear-gradient(135deg,#042f2e,#134e4a)", border:"#14b8a6", glow:"rgba(20,184,166,0.3)" },
++  blue:   { bg:"linear-gradient(135deg,#0c1a4a,#1e3a8a)", border:"#3b82f6", glow:"rgba(59,130,246,0.3)" },
++  purple: { bg:"linear-gradient(135deg,#1e1b4b,#312e81)", border:"#818cf8", glow:"rgba(129,140,248,0.3)" },
++  dark:   { bg:"#1a1a2e",                                border:"#242438", glow:"none" }
++};
++
++function paintCard(id, colorKey){
++  var card = ge(id);
++  if (!card) return;
++
++  var c = CARD_COLORS[colorKey] || CARD_COLORS.dark;
++
++  card.style.setProperty("background", c.bg, "important");
++  card.style.setProperty("border-color", c.border, "important");
++  card.style.setProperty("box-shadow", "0 6px 25px " + c.glow, "important");
++}
++
++
++// ═══════════════════════════════════════════════
++//  COMMUNITY BADGE
++// ═══════════════════════════════════════════════
++function setCB(id, votes, done, thresh){
++  var e = ge(id+"-cb"); if(!e) return;
++  if(done){ e.className="cb cb-ok"; e.textContent="✅ Community Confirmed"; }
++  else if(votes>=1){ e.className="cb cb-wait"; e.textContent="⚠️ Awaiting ("+votes+"/"+(thresh||3)+")"; }
++  else{ e.className="cb cb-none"; e.textContent="⬜ No votes yet"; }
++}
++
++// ═══════════════════════════════════════════════
++//  ADMIN
++// ═══════════════════════════════════════════════
++var isAdmin = sessionStorage.getItem("adm")==="1";
++if(isAdmin) ge("admin-bar").classList.add("show");
++
++function checkAdmin(){
++  if(isAdmin) return true;
++  var pw=prompt("🔐 Admin password:");
++  if(pw===ADMIN_PASS){ isAdmin=true; sessionStorage.setItem("adm","1"); ge("admin-bar").classList.add("show"); toast("🔐 Admin access granted"); return true; }
++  toast("❌ Wrong password"); return false;
++}
++function adminLogout(){ if(!confirm("Exit admin?")) return; isAdmin=false; sessionStorage.removeItem("adm"); ge("admin-bar").classList.remove("show"); toast("Logged out"); }
++
++// ═══════════════════════════════════════════════
++//  NOTIFICATIONS
++// ═══════════════════════════════════════════════
++var nOn=false, lnk="";
++function initNotif(){
++  if(!("Notification" in window)) return;
++  if(Notification.permission==="granted"){ ge("notif-banner").style.display="none"; startNotif(); }
++  else if(Notification.permission==="default") ge("notif-banner").classList.add("show");
++}
++function reqNotif(){
++  ge("notif-btn").textContent="...";
++  Notification.requestPermission().then(function(p){
++    if(p==="granted"){ ge("notif-banner").classList.remove("show"); startNotif(); toast("🔔 Meal reminders on!"); }
++    else{ ge("notif-st").textContent="Denied — enable in browser settings"; ge("notif-btn").textContent="Enable"; }
++  });
++}
++function startNotif(){ if(nOn) return; nOn=true; chkMeal(); setInterval(chkMeal,60000); }
++function chkMeal(){
++  if(Notification.permission!=="granted") return;
++  var n=new Date(),h=n.getHours(),m=n.getMinutes(),k=h+":"+m;
++  if(k===lnk) return;
++  [{h:7,m:30,t:"🍳 Breakfast is served!",b:"Head to mess!"},{h:12,m:30,t:"🍽️ Lunch time!",b:"Mess open for Lunch!"},{h:17,m:0,t:"☕ Snacks time!",b:"Snacks at mess!"},{h:19,m:30,t:"🌙 Dinner ready!",b:"Dinner served at mess!"}]
++  .forEach(function(x){ if(h===x.h&&m===x.m){ new Notification(x.t,{body:x.b}); lnk=k; } });
++}
++
++// ═══════════════════════════════════════════════
++//  TICKER
++// ═══════════════════════════════════════════════
++db.ref("actLog").orderByChild("ts").limitToLast(20).on("value",function(snap){
++  var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
++  if(!a.length) return;
++  var h=a.map(function(x){ return '<span class="ti"><b>'+ts(x.ts)+'</b> '+esc(x.msg)+'</span>'; }).join('');
++  ge("ttrack").innerHTML=h+h;
++});
++function logAct(msg){ db.ref("actLog").push({msg:msg,ts:Date.now()}); }
++
++// ═══════════════════════════════════════════════
++//  MESS MENU
++// ═══════════════════════════════════════════════
++var bf13={Monday:"Vada+Sambar+Chutney+Shavige",Tuesday:"Poha+Fruits+Chowchow Bath+Chutney",Wednesday:"Plain Dosa+Aloo+Chutney+Egg",Thursday:"Bisi Belle Bath+Bread Jam+Fruits",Friday:"Green Moong Dosa+Oats+Chutney",Saturday:"Tomato Bath+Puliyogare+Chutney",Sunday:"Masala Dosa+Aloo+Chutney"};
++var bf24={Monday:"Millets Khichdi+Vada+Sambar+Idly",Tuesday:"Lemon Rice+Bread Jam+Fruits",Wednesday:"Ragi Dosa+Dalia+Tomato Chutney+Egg",Thursday:"Onion Uthappam+Mangalore Bajji+Chutney",Friday:"Dal Khichdi+Dosa+Chutney",Saturday:"Pongal+Bread Jam+Fruits",Sunday:"Set Dosa+Chutney"};
++var dm={Monday:{L:"Poori/Ragi Ball+Rice+Drumstick+Channa+Curd",S:"Cutlet+Tea",D:"Dal Makhni+Rice+Dal+Veg"},Tuesday:{L:"Methi Chapathi+Rice+Dal+Veg Pulav+Curd",S:"Kabuli Husli+Tea",D:"Soyabean+Radish Sambhar+Chapati"},Wednesday:{L:"Chapathi/Ragi+Rice+Paneer+Sprouts Sambhar",S:"Samosa+Tea",D:"Chapathi+Rice+Aloo+Rasam"},Thursday:{L:"Paratha+Rajma+Jeera Rice+Pudina Rice+Curd",S:"Vada Pav+Tea",D:"Chapathi+Egg Curry+Dal Palak+Salad"},Friday:{L:"Palak Chapati+Bhindi+Chicken Biryani+Curd",S:"Bhel Puri+Tea",D:"Chapathi+Rice+Dal+Veg"},Saturday:{L:"Chapathi+Rice+Dal+Mix Veg Beans+Curd",S:"Masala Vada+Tea",D:"Chapathi+Dal+Veg+Salad"},Sunday:{L:"Mushroom/Paneer Biryani+Salad",S:"Pav Bhaji+Tea",D:"Chapathi+Beetroot Palya+Veg"}};
++var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
++function wkPat(d){ var fd=new Date(d.getFullYear(),d.getMonth(),1),wk=Math.ceil((d.getDate()+fd.getDay())/7); return(wk===1||wk===3)?"w13":"w24"; }
++function nxMeal(){ var n=new Date(),h=n.getHours(),day=DAYS[n.getDay()]; if(h>=22){var t=new Date(n);t.setDate(t.getDate()+1);return{date:t,day:DAYS[t.getDay()],meal:"Breakfast"};} if(h>=18)return{date:n,day:day,meal:"Dinner"}; if(h>=15)return{date:n,day:day,meal:"Snacks"}; if(h>=10)return{date:n,day:day,meal:"Lunch"}; return{date:n,day:day,meal:"Breakfast"}; }
++function getMnu(date,day,meal){ if(meal==="Breakfast") return (wkPat(date)==="w13"?bf13:bf24)[day]||""; var k={Lunch:"L",Snacks:"S",Dinner:"D"}[meal]; return dm[day]?dm[day][k]||"":""; }
++function updMess(){ var n=nxMeal(); setText("mess-meal","Next: "+n.meal); setText("mess-menu",getMnu(n.date,n.day,n.meal)); }
++updMess(); setInterval(updMess,60000);
++
++// ═══════════════════════════════════════════════
++//  VOTING ENGINE
++//  Uses atomic _voteCount so confirmed state is reliable
++// ═══════════════════════════════════════════════
++var confirmed = {};
++
++function doVote(place, value, thresh){
++  var dvRef = db.ref(place+"_dv/"+devId);
++  dvRef.once("value",function(snap){
++    if(snap.exists()) return toast("Already voted for "+place);
++    dvRef.set({v:value,ts:Date.now()});
++
++    db.ref(place+"_votedFor").once("value",function(vf){
++      var cur=vf.val();
++      if(cur && cur!==value){
++        dvRef.remove();
++        return toast("Vote in progress for: "+cur);
++      }
++      if(!cur) db.ref(place+"_votedFor").set(value);
++
++      db.ref(place+"_voteCount").transaction(function(c){ return (c||0)+1; },function(err,ok,sn){
++        if(err||!ok||!sn){ dvRef.remove(); return toast("Error voting, try again"); }
++        var count=sn.val(), rem=thresh-count;
++        if(count>=thresh){
++          console.log("CONFIRMING:", place, value);
++            db.ref(place).set({status:value,ts:Date.now()},function(){
++            db.ref(place+"_voteCount").remove();
++            db.ref(place+"_votedFor").remove();
++            db.ref(place+"_dv").remove();
++            db.ref(place+"_pend").remove();
++          });
++          logAct("✅ "+thresh+"/"+thresh+" confirmed: "+place+" → "+value);
++          toast("✅ Community confirmed!");
++        } else {
++          db.ref(place+"_pend").set("Awaiting "+rem+" more confirmation(s)");
++          logAct("🗳️ "+place+" vote "+count+"/"+thresh+": "+value);
++          toast("Vote recorded! "+rem+" more needed.");
++        }
++      });
++    });
++  });
++  closeModal();
++}
++
++function adminSet(place, value){
++  if(!checkAdmin()) return;
++  db.ref(place).set({status:value,ts:Date.now()});
++  db.ref(place+"_voteCount").remove();
++  db.ref(place+"_votedFor").remove();
++  db.ref(place+"_dv").remove();
++  db.ref(place+"_pend").remove();
++  logAct("🔐 Admin set: "+place+" → "+value);
++  toast("✅ Override applied!"); closeModal();
++}
++
++// ═══════════════════════════════════════════════
++//  STATUS LISTENERS
++// ═══════════════════════════════════════════════
++function listenPlace(place, thresh, onStatus){
++  db.ref(place).on("value",function(snap){
++    var d=snap.val();
++    if(!d||!d.status){ confirmed[place]=false; setCB(place,0,false,thresh); onStatus(null); return; }
++    confirmed[place]=true;
++    setCB(place,0,true,thresh);
++    onStatus(d);
++  });
++  db.ref(place+"_voteCount").on("value",function(snap){
++    var c=snap.val()||0;
++    var e=ge(place+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
++    if(!confirmed[place]) setCB(place,c,false,thresh);
++  });
++  db.ref(place+"_pend").on("value",function(snap){
++    var e=ge(place+"-pend"); if(e) e.textContent=(!confirmed[place]&&snap.val())?snap.val():"";
++  });
++}
++
++
++// MESS
++function getMessState(rawStatus){
++  var raw=(rawStatus||"").trim();
++  var norm=raw.toLowerCase().replace(/[^a-z\s]/g,"").replace(/\s+/g," ").trim();
++
++  if(norm==="food available"||norm==="available"||norm==="open"||norm==="food served"){
++    return { tone:"green", cls:"s-green", label:"✅ Food Available" };
++  }
++  if(
++    norm==="food not available"||norm==="not available"||norm==="food finished"||
++    norm==="no food"||norm==="closed"
++  ){
++    return { tone:"red", cls:"s-red", label:"❌ Food Not Available" };
++  }
++  return { tone:"dark", cls:"s-gray", label:raw||"Not Updated" };
++}
++
++function getPlaceState(rawStatus, map, fallback){
++  var raw=(rawStatus||"").trim();
++  var norm=raw.toLowerCase().replace(/[^a-z\s]/g,"").replace(/\s+/g," ").trim();
++  return map[norm] || fallback(raw);
++}
++
++function getGymState(rawStatus){
++  return getPlaceState(rawStatus, {
++    "open free":{ tone:"green", cls:"s-green", label:"✅ Open · Free" },
++    "open uncrowded":{ tone:"green", cls:"s-green", label:"✅ Open · Free" },
++    "open crowded":{ tone:"amber", cls:"s-amber", label:"⚠️ Crowded" },
++    "crowded":{ tone:"amber", cls:"s-amber", label:"⚠️ Crowded" },
++    "closed":{ tone:"red", cls:"s-red", label:"🔒 Closed" }
++  }, function(raw){ return { tone:"dark", cls:"s-gray", label:raw||"Not Updated" }; });
++}
++
++function getOpenCloseState(rawStatus, openLabel){
++  return getPlaceState(rawStatus, {
++    "open":{ tone:"green", cls:"s-green", label:openLabel },
++    "available":{ tone:"green", cls:"s-green", label:openLabel },
++    "opened":{ tone:"green", cls:"s-green", label:openLabel },
++    "closed":{ tone:"red", cls:"s-red", label:"🔒 Closed" },
++    "close":{ tone:"red", cls:"s-red", label:"🔒 Closed" },
++    "not available":{ tone:"red", cls:"s-red", label:"🔒 Closed" }
++  }, function(raw){ return { tone:"dark", cls:"s-gray", label:raw||"Not Updated" }; });
++}
++
++listenPlace("mess",T_MESS,function(d){
++  console.log("MESS LISTENER FIRED:", d);
++  var av=ge("mess-avail"),tEl=ge("mess-ts");
++
++  if(!d){
++    paintCard("mess-card","dark");
++    av.className="sbdg s-gray";
++    av.textContent="Not Updated";
++    if(tEl) tEl.textContent="";
++    return;
++  }
++
++  var view = getMessState(d.status);
++  paintCard("mess-card",view.tone);
++  av.className="sbdg "+view.cls;
++  av.textContent=view.label;
++
++  if(tEl) tEl.textContent=ago(d.ts);
++});
++
++
++// GYM
++listenPlace("gym",T_GYM,function(d){
++  var s=ge("gym-status"),tEl=ge("gym-ts");
++
++  if(!d){
++    paintCard("gym-card","dark");
++    s.className="sbdg s-gray";
++    s.textContent="Not Updated";
++    if(tEl) tEl.textContent="";
++    return;
++  }
++
++  var view = getGymState(d.status);
++  paintCard("gym-card",view.tone);
++  s.className="sbdg "+view.cls;
++  s.textContent=view.label;
++
++  if(tEl) tEl.textContent=ago(d.ts);
++});
++
++
++// NESCAFE
++listenPlace("nescafe",T_NESCAFE,function(d){
++  var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
++  if(!d){ paintCard("nescafe-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
++  var view = getOpenCloseState(d.status,"✅ Open");
++  paintCard("nescafe-card",view.tone);
++  s.className="sbdg "+view.cls;
++  s.textContent=view.label;
++  if(tEl) tEl.textContent=ago(d.ts);
++});
++
++// NANDINI
++listenPlace("nandini",T_NANDINI,function(d){
++  var s=ge("nandini-avail"),tEl=ge("nandini-ts");
++  if(!d){ paintCard("nandini-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
++  var view = getOpenCloseState(d.status,"✅ Open");
++  paintCard("nandini-card",view.tone);
++  s.className="sbdg "+view.cls;
++  s.textContent=view.label;
++  if(tEl) tEl.textContent=ago(d.ts);
++});
++
++// BADMINTON
++listenPlace("bad",T_BAD,function(d){
++  var s=ge("bad-avail"),tEl=ge("bad-ts");
++  if(!d||!s){ paintCard("bad-card","dark"); return; }
++  var st=d.status||"Not Updated";
++  if(st==="Full"){ paintCard("bad-card","red"); s.className="sbdg s-red"; }
++  else if(st.includes("1")||st.includes("2")){ paintCard("bad-card","amber"); s.className="sbdg s-amber"; }
++  else { paintCard("bad-card","green"); s.className="sbdg s-green"; }
++  s.textContent=st;
++  if(tEl) tEl.textContent=ago(d.ts);
++});
++
++// DOCTOR ON CAMPUS
++listenPlace("doc",T_DOC,function(d){
++  var s=ge("doc-avail"),tEl=ge("doc-ts");
++  if(!d){ paintCard("doc-card","dark"); s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
++  if(d.status==="On Campus"){ paintCard("doc-card","green"); s.className="sbdg s-green"; s.textContent="✅ On Campus"; }
++  else { paintCard("doc-card","red"); s.className="sbdg s-red"; s.textContent="❌ Not Available"; }
++  if(tEl) tEl.textContent=ago(d.ts);
++});
++
++// Suggestions
++db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numChildren()||0)+" suggestion(s)"); });
++
++// ═══════════════════════════════════════════════
++//  FACULTY GRID
++// ═══════════════════════════════════════════════
++var facConf = {};  // tracks which faculty cards are confirmed
++
++function buildFacultyGrid(){
++  var grid = ge("faculty-grid");
++  grid.innerHTML = FACULTY.map(function(name,i){
++    var key = "fac_"+i;
++    var short = name.replace(/^(Dr\.|Prof\.)\s/,"");
++    return '<div class="card" id="'+key+'-card" onclick="openFacModal('+i+')" style="min-width:0;">'+
++      '<div class="ch"><span class="ct" style="font-size:0.82em;">👤 '+esc(short)+'</span></div>'+
++      '<span class="sbdg s-gray" id="'+key+'-status">Not Updated</span>'+
++      '<div class="cb cb-none" id="'+key+'-cb" style="font-size:0.62em;">⬜ No votes</div>'+
++      '<div class="vc" id="'+key+'-vc"></div>'+
++      '<div class="tc" id="'+key+'-ts"></div>'+
++    '</div>';
++  }).join('');
++
++  // Listen to each faculty
++  FACULTY.forEach(function(name,i){
++    var key = "fac_"+i;
++    listenFaculty(key, T_PROF);
++  });
++}
++
++function listenFaculty(key, thresh){
++  db.ref(key).on("value",function(snap){
++    var d=snap.val();
++    var s=ge(key+"-status"), tEl=ge(key+"-ts");
++    if(!d||!d.status){
++      facConf[key]=false;
++      paintCard(key+"-card","dark");
++      if(s){ s.className="sbdg s-gray"; s.textContent="Not Updated"; }
++      setCB(key,0,false,thresh);
++      return;
++    }
++    facConf[key]=true;
++    setCB(key,0,true,thresh);
++    var st=d.status;
++    if(st==="In Class"){ paintCard(key+"-card","green"); if(s){ s.className="sbdg s-green"; s.textContent="🏫 In Class"; } }
++    else if(st==="In Cabin"){ paintCard(key+"-card","teal"); if(s){ s.className="sbdg s-teal"; s.textContent="🚪 In Cabin"; } }
++    else if(st==="Admin"){ paintCard(key+"-card","amber"); if(s){ s.className="sbdg s-amber"; s.textContent="🏢 Admin"; } }
++    else if(st==="On Leave"){ paintCard(key+"-card","red"); if(s){ s.className="sbdg s-red"; s.textContent="🏖️ On Leave"; } }
++    else { paintCard(key+"-card","blue"); if(s){ s.className="sbdg s-blue"; s.textContent=st; } }
++    if(tEl) tEl.textContent=ago(d.ts);
++  });
++  db.ref(key+"_voteCount").on("value",function(snap){
++    var c=snap.val()||0;
++    var e=ge(key+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
++    if(!facConf[key]) setCB(key,c,false,thresh);
++  });
++}
++
++buildFacultyGrid();
++
++// ═══════════════════════════════════════════════
++//  MODAL
++// ═══════════════════════════════════════════════
++function adminRow(place, options){
++  if(!isAdmin) return '';
++  var btns = options.map(function(o){
++    return '<button class="adm-btn" onclick="adminSet(\''+place+'\',\''+o.v+'\')">'+o.l+'</button>';
++  }).join('');
++  return '<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+btns+'</div></div>';
++}
++
++function openModal(place){
++  var h='<div class="mh"><span>';
++
++  if(place==='mess'){
++    h+='🍽️ Mess</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_MESS+' confirmations</p>';
++    h+='<div class="bst">'+
++      '<button class="mb g" onclick="doVote(\'mess\',\'Food Available\','+T_MESS+')">✅ Food Available</button>'+
++      '<button class="mb r" onclick="doVote(\'mess\',\'Food Not Available\','+T_MESS+')">❌ Food Not Available</button>'+
++    '</div>'+
++    adminRow('mess',[{v:'Food Available',l:'✅ Force Available'},{v:'Food Not Available',l:'❌ Force Not Available'}])+
++    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++
++  } else if(place==='gym'){
++    h+='🏋️ Gym</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<div class="bst">'+
++      '<button class="mb g" onclick="doVote(\'gym\',\'Open · Free\','+T_GYM+')">✅ Open · Free</button>'+
++      '<button class="mb a" onclick="doVote(\'gym\',\'Open · Crowded\','+T_GYM+')">⚠️ Open · Crowded</button>'+
++      '<button class="mb r" onclick="doVote(\'gym\',\'Closed\','+T_GYM+')">🔒 Closed</button>'+
++    '</div>'+
++    adminRow('gym',[{v:'Open · Free',l:'✅ Free'},{v:'Open · Crowded',l:'⚠️ Crowded'},{v:'Closed',l:'🔒 Closed'}])+
++    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++
++  } else if(place==='nescafe'){
++    h+='☕ Nescafé</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NESCAFE+' confirmations</p>';
++    h+='<div class="bst">'+
++      '<button class="mb g" onclick="doVote(\'nescafe\',\'Open\','+T_NESCAFE+')">✅ Open</button>'+
++      '<button class="mb r" onclick="doVote(\'nescafe\',\'Closed\','+T_NESCAFE+')">🔒 Closed</button>'+
++    '</div>'+
++    adminRow('nescafe',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
++    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++
++  } else if(place==='nandini'){
++    h+='🥛 Nandini</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NANDINI+' confirmations</p>';
++    h+='<div class="bst">'+
++      '<button class="mb g" onclick="doVote(\'nandini\',\'Open\','+T_NANDINI+')">✅ Open</button>'+
++      '<button class="mb r" onclick="doVote(\'nandini\',\'Closed\','+T_NANDINI+')">🔒 Closed</button>'+
++    '</div>'+
++    adminRow('nandini',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
++    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++
++  } else if(place==='bad'){
++    h+='🏸 Badminton</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">How many courts FREE? (needs '+T_BAD+')</p>';
++    h+='<div class="bst">'+
++      '<button class="mb g" onclick="doVote(\'bad\',\'4 Free\','+T_BAD+')">🟢 All 4 Free</button>'+
++      '<button class="mb g" onclick="doVote(\'bad\',\'3 Free\','+T_BAD+')">🟢 3 Free</button>'+
++      '<button class="mb a" onclick="doVote(\'bad\',\'2 Free\','+T_BAD+')">🟡 2 Free</button>'+
++      '<button class="mb a" onclick="doVote(\'bad\',\'1 Free\','+T_BAD+')">🟡 1 Free</button>'+
++      '<button class="mb r" onclick="doVote(\'bad\',\'Full\','+T_BAD+')">🔴 All Full</button>'+
++    '</div>'+
++    adminRow('bad',[{v:'4 Free',l:'All 4 Free'},{v:'Full',l:'Full'}])+
++    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++
++  } else if(place==='doc'){
++    h+='🏥 Doctor on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Is the doctor on campus? (needs '+T_DOC+')</p>';
++    h+='<div class="bst">'+
++      '<button class="mb g" onclick="doVote(\'doc\',\'On Campus\','+T_DOC+')">✅ Yes — Doctor on Campus</button>'+
++      '<button class="mb r" onclick="doVote(\'doc\',\'Not Available\','+T_DOC+')">❌ No — Not Available</button>'+
++    '</div>'+
++    adminRow('doc',[{v:'On Campus',l:'✅ On Campus'},{v:'Not Available',l:'❌ Not Available'}])+
++    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++
++  } else if(place==='sug'){
++    h+='💡 Suggestions</span><button class="mx" onclick="closeModal()">✕</button></div>';
++    h+='<textarea class="mi" id="sug-in" rows="4" placeholder="Share an idea or bug report..."></textarea>';
++    h+='<div class="bst"><button class="mb g" onclick="doSug()">Submit</button></div>';
++    h+='<hr style="border:none;border-top:1px solid #2a2a3e;margin:14px 0;">';
++    h+='<div id="sug-feed" style="max-height:200px;overflow-y:auto;"></div>';
++    h+='<button class="mb x" style="margin-top:10px;" onclick="closeModal()">Close</button>';
++    setTimeout(function(){
++      db.ref("suggestions").orderByChild("ts").limitToLast(10).once("value",function(snap){
++        var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
++        var e=ge("sug-feed"); if(!e) return;
++        e.innerHTML=a.length?a.map(function(s){ return '<div style="background:rgba(255,255,255,0.03);border:1px solid #2a2a3e;border-radius:9px;padding:9px;margin-bottom:7px;font-size:0.8em;color:#94a3b8;">'+esc(s.text||'')+'<div style="font-size:0.7em;color:#444;margin-top:3px;">'+ago(s.ts)+'</div></div>'; }).join('') : '<p style="color:#444;text-align:center;padding:10px;">No suggestions yet</p>';
++      });
++    },100);
++  }
++
++  ge("mbox").innerHTML=h;
++  ge("modal").classList.add("active");
++}
++
++function openFacModal(idx){
++  var key="fac_"+idx, name=FACULTY[idx];
++  var h='<div class="mh"><span>👤 '+esc(name)+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
++  h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Where is '+esc(name.split(' ')[1]||name)+' right now? (needs '+T_PROF+')</p>';
++  h+='<div class="bst">'+
++    '<button class="mb g" onclick="doVote(\''+key+'\',\'In Class\','+T_PROF+')">🏫 In Class</button>'+
++    '<button class="mb t" onclick="doVote(\''+key+'\',\'In Cabin\','+T_PROF+')">🚪 In Cabin</button>'+
++    '<button class="mb a" onclick="doVote(\''+key+'\',\'Admin\','+T_PROF+')">🏢 Admin Block</button>'+
++    '<button class="mb r" onclick="doVote(\''+key+'\',\'On Leave\','+T_PROF+')">🏖️ On Leave</button>'+
++  '</div>';
++  if(isAdmin){
++    h+='<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+
++      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'In Class\')">In Class</button>'+
++      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'In Cabin\')">In Cabin</button>'+
++      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'Admin\')">Admin</button>'+
++      '<button class="adm-btn" onclick="adminSet(\''+key+'\',\'On Leave\')">On Leave</button>'+
++    '</div></div>';
++  }
++  h+='<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
++  ge("mbox").innerHTML=h;
++  ge("modal").classList.add("active");
++}
++
++function closeModal(){ ge("modal").classList.remove("active"); }
++function bgClose(e){ if(e.target===ge("modal")) closeModal(); }
++
++// ═══════════════════════════════════════════════
++//  SUGGESTIONS
++// ═══════════════════════════════════════════════
++function doSug(){
++  var t=(ge("sug-in")||{}).value||""; t=t.trim();
++  if(!t) return alert("Please enter something");
++  db.ref("suggestions").push({text:t,ts:Date.now()});
++  logAct("💡 Suggestion submitted");
++  toast("Thanks!"); closeModal();
++}
++
++// ═══════════════════════════════════════════════
++//  ANNOUNCEMENTS
++// ═══════════════════════════════════════════════
++function openAnnPost(){
++  if(!checkAdmin()) return;
++  var h='<div class="mh"><span>📢 Post Announcement</span><button class="mx" onclick="closeModal()">✕</button></div>';
++  h+='<textarea class="mi" id="ann-in" rows="4" placeholder="Announcement text..."></textarea>';
++  h+='<select class="msel" id="ann-tag"><option value="general">General</option><option value="mess">🍛 Mess</option><option value="event">🎉 Event</option><option value="academic">📚 Academic</option></select>';
++  h+='<div class="bst"><button class="mb g" onclick="postAnn()">Post Announcement</button><button class="mb x" onclick="closeModal()">Cancel</button></div>';
++  ge("mbox").innerHTML=h; ge("modal").classList.add("active");
++}
++function postAnn(){
++  var t=(ge("ann-in")||{}).value||""; t=t.trim();
++  var tag=(ge("ann-tag")||{}).value||"general";
++  if(!t) return alert("Please enter text");
++  db.ref("announcements").push({text:t,tag:tag,ts:Date.now()});
++  logAct("📢 Announcement posted");
++  toast("📢 Posted!"); closeModal();
++}
++function delAnn(id){ if(!checkAdmin()) return; if(!confirm("Delete?")) return; db.ref("announcements/"+id).remove(); toast("Deleted"); }
++function cleanAnn(){ db.ref("announcements").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>ANN_EXP) db.ref("announcements/"+c.key).remove(); }); }); }
++cleanAnn(); setInterval(cleanAnn,300000);
++
++db.ref("announcements").orderByChild("ts").on("value",function(snap){
++  var posts=[],now=Date.now();
++  snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<ANN_EXP) posts.push({id:c.key,...d}); });
++  posts.reverse();
++  var con=ge("ann-list");
++  if(!posts.length){ con.innerHTML='<div class="ann-empty">No announcements yet</div>'; return; }
++  con.innerHTML=posts.map(function(p){
++    var exp=Math.ceil((ANN_EXP-(now-p.ts))/60000);
++    var expTxt=exp>60?Math.ceil(exp/60)+"hr left":exp+"m left";
++    return '<div class="ann-card"><div class="ann-txt">'+esc(p.text)+'</div>'+
++      '<div class="ann-meta"><span class="ann-tag tag-'+p.tag+'">'+p.tag+'</span><span class="ann-ts">'+ago(p.ts)+'</span><span class="ann-ts" style="color:#333;">⏱ '+expTxt+'</span>'+
++      (isAdmin?'<button class="ann-del" onclick="delAnn(\''+p.id+'\')">🗑</button>':'')+
++      '</div></div>';
++  }).join('');
++});
++
++// ═══════════════════════════════════════════════
++//  IMMEDIATE UPDATES + DOWNVOTES
++// ═══════════════════════════════════════════════
++db.ref("immediateUpdates").orderByChild("ts").limitToLast(10).on("value",function(snap){
++  var sec=ge("imm-wrap"),con=ge("imm-list"),posts=[];
++  snap.forEach(function(c){ posts.push({id:c.key,...c.val()}); });
++  posts.reverse();
++  if(!posts.length){ sec.style.display="none"; return; }
++  sec.style.display="block";
++  con.innerHTML=posts.map(function(p){
++    var dv=p.downvotes||0,dvd=!!localStorage.getItem("idv_"+p.id);
++    return '<div class="imm-card">'+esc(p.text)+
++      '<div class="imm-meta">🔴 Crowd verified · '+ago(p.ts)+
++      ' <span style="color:#92400e;">'+dv+'/5 downvotes</span>'+
++      '<button class="dv-btn" onclick="'+(dvd?'toast(\'Already downvoted\')':'dvImm(\''+p.id+'\')')+'" '+(dvd?'style="opacity:0.4;"':'')+'>👎</button>'+
++      (isAdmin?'<button class="ann-del" onclick="admDel(\''+p.id+'\')">🗑</button>':'')+
++      '</div></div>';
++  }).join('');
++});
++
++function dvImm(id){
++  var k="idv_"+id; if(localStorage.getItem(k)) return toast("Already downvoted");
++  localStorage.setItem(k,"1");
++  db.ref("immediateUpdates/"+id).transaction(function(d){ if(!d) return d; d.downvotes=(d.downvotes||0)+1; return d; },function(err,ok,snap){
++    if(!snap) return; var d=snap.val();
++    if(d&&d.downvotes>=IMM_DV){ db.ref("immediateUpdates/"+id).remove(); logAct("🗑️ Update removed by community"); toast("Post removed by community"); }
++    else toast("Downvoted ("+(d?d.downvotes:1)+"/5)");
++  });
++}
++function admDel(id){ if(!checkAdmin()) return; db.ref("immediateUpdates/"+id).remove(); toast("Deleted"); }
++
++// ═══════════════════════════════════════════════
++//  HEARTBEAT
++// ═══════════════════════════════════════════════
++function updateCC(){ var v=ge("hb-txt").value,c=ge("chct"); c.textContent=v.length+" / 80"; c.className="chct"+(v.length>70?" warn":""); }
++function postHB(){
++  var t=ge("hb-txt").value.trim();
++  if(!t) return alert("Write something"); if(t.length>80) return alert("Max 80 chars");
++  db.ref("heartbeat").push({text:t,ts:Date.now(),upvotes:0,graduated:false});
++  logAct("💗 Heartbeat: \""+t.slice(0,28)+(t.length>28?"…":"")+"\"");
++  ge("hb-txt").value=""; ge("chct").textContent="0 / 80";
++}
++function uvHB(id){
++  var k="hbv_"+id; if(localStorage.getItem(k)) return toast("Already upvoted");
++  localStorage.setItem(k,"1");
++  db.ref("heartbeat/"+id).transaction(function(d){ if(!d) return d; d.upvotes=(d.upvotes||0)+1; return d; },function(err,ok,snap){
++    if(!snap) return; var d=snap.val();
++    if(d&&d.upvotes>=HB_VOTES&&!d.graduated){
++      db.ref("immediateUpdates").push({text:d.text,ts:Date.now()});
++      db.ref("heartbeat/"+id).update({graduated:true});
++      logAct("🔴 Heartbeat graduated!");
++      setTimeout(function(){ db.ref("heartbeat/"+id).remove(); },2500);
++    }
++  });
++}
++function cleanHB(){ db.ref("heartbeat").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated&&(now-d.ts)>HB_TTL) db.ref("heartbeat/"+c.key).remove(); }); }); }
++cleanHB(); setInterval(cleanHB,30000);
++
++db.ref("heartbeat").on("value",function(snap){
++  var feed=ge("hb-feed"),now=Date.now(),posts=[];
++  snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated) posts.push({id:c.key,...d}); });
++  posts.sort(function(a,b){ return b.ts-a.ts; });
++  if(!posts.length){ feed.innerHTML='<div class="hb-empty">No active posts · be the first</div>'; return; }
++  feed.innerHTML=posts.map(function(p){
++    var voted=!!localStorage.getItem("hbv_"+p.id);
++    var rem=Math.max(0,HB_TTL-(now-p.ts)),pct=(rem/HB_TTL)*100,mins=Math.ceil(rem/60000),uv=p.upvotes||0;
++    return '<div class="hb-card"><div style="flex:1;"><div class="hb-txt">'+esc(p.text)+'</div>'+
++      '<div style="font-size:0.62em;color:#7f3040;margin-top:3px;">⏱ '+mins+'m left · '+uv+'/'+HB_VOTES+' upvotes</div>'+
++      '<div class="tbar"><div class="tfil" style="width:'+pct+'%"></div></div></div>'+
++      '<div class="hb-r"><button class="uv-btn'+(voted?' voted':'')+'" onclick="'+(voted?'toast(\'Already upvoted\')':'uvHB(\''+p.id+'\')')+'">👍 '+uv+'</button></div></div>';
++  }).join('');
++});
++
++// ═══════════════════════════════════════════════
++//  INIT
++// ═══════════════════════════════════════════════
++initNotif();
++</script>
++</body>
++</html>
+ 
+EOF
+)
