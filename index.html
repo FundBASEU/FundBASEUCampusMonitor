@@ -58,6 +58,25 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
 /* ── CARD COLOR STATES (applied via JS .style directly) ── */
 /* These are templates used by JS — no class switching needed */
 
+/* FULL-WIDTH STATUS TILES */
+.fw-grid{display:flex;flex-direction:column;gap:9px;margin-bottom:10px;}
+.fw-card{
+  border-radius:16px;padding:15px 18px;
+  cursor:pointer;border:2px solid #242438;
+  transition:background 0.35s ease,border-color 0.35s ease,box-shadow 0.35s ease,transform 0.15s;
+  -webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:#1a1a2e;
+  box-shadow:0 4px 18px rgba(0,0,0,0.4);
+}
+.fw-card:active{transform:scale(0.98);}
+.fw-left{display:flex;align-items:center;gap:11px;flex-shrink:0;}
+.fw-icon{font-size:1.55em;line-height:1;}
+.fw-title{font-family:'Space Grotesk',sans-serif;font-size:1.05em;font-weight:800;color:#e2e8f0;}
+.fw-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.fw-status{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#94a3b8;}
+.fw-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+
 .ct{font-family:'Space Grotesk',sans-serif;font-size:0.92em;font-weight:700;color:#e2e8f0;}
 .ci{font-size:1.3em;}
 
@@ -208,6 +227,71 @@ header p{font-size:0.75em;color:#555;margin-bottom:6px;}
   </div>
 
   <div class="sec-lbl">Campus Status</div>
+
+  <!-- FULL-WIDTH STATUS TILES -->
+  <div class="fw-grid">
+
+    <div class="fw-card" id="mess-card" onclick="openModal('mess')">
+      <div class="fw-left">
+        <span class="fw-icon">🍽️</span>
+        <span class="fw-title">Mess</span>
+      </div>
+      <div class="fw-right">
+        <span class="fw-status" id="mess-avail">Not Updated</span>
+        <div class="fw-meta">
+          <span class="cb cb-none" id="mess-cb">⬜ No votes yet</span>
+          <span class="vc" id="mess-vc"></span>
+        </div>
+        <span class="tc" id="mess-ts"></span>
+      </div>
+    </div>
+
+    <div class="fw-card" id="nandini-card" onclick="openModal('nandini')">
+      <div class="fw-left">
+        <span class="fw-icon">🥛</span>
+        <span class="fw-title">Nandini</span>
+      </div>
+      <div class="fw-right">
+        <span class="fw-status" id="nandini-avail">Not Updated</span>
+        <div class="fw-meta">
+          <span class="cb cb-none" id="nandini-cb">⬜ No votes yet</span>
+          <span class="vc" id="nandini-vc"></span>
+        </div>
+        <span class="tc" id="nandini-ts"></span>
+      </div>
+    </div>
+
+    <div class="fw-card" id="nescafe-card" onclick="openModal('nescafe')">
+      <div class="fw-left">
+        <span class="fw-icon">☕</span>
+        <span class="fw-title">Nescafé</span>
+      </div>
+      <div class="fw-right">
+        <span class="fw-status" id="nescafe-avail">Not Updated</span>
+        <div class="fw-meta">
+          <span class="cb cb-none" id="nescafe-cb">⬜ No votes yet</span>
+          <span class="vc" id="nescafe-vc"></span>
+        </div>
+        <span class="tc" id="nescafe-ts"></span>
+      </div>
+    </div>
+
+    <div class="fw-card" id="gym-card" onclick="openModal('gym')">
+      <div class="fw-left">
+        <span class="fw-icon">🏋️</span>
+        <span class="fw-title">Gym</span>
+      </div>
+      <div class="fw-right">
+        <span class="fw-status" id="gym-avail">Not Updated</span>
+        <div class="fw-meta">
+          <span class="cb cb-none" id="gym-cb">⬜ No votes yet</span>
+          <span class="vc" id="gym-vc"></span>
+        </div>
+        <span class="tc" id="gym-ts"></span>
+      </div>
+    </div>
+
+  </div>
 
   <!-- SMALL TILES GRID -->
   <div class="grid">
@@ -518,6 +602,57 @@ function listenPlace(place, thresh, onStatus){
   });
 }
 
+// ─── FULL-WIDTH TILE PAINTER ───────────────────
+function paintFW(id, colorKey){
+  var card = ge(id);
+  if(!card) return;
+  var c = CARD_COLORS[colorKey] || CARD_COLORS.dark;
+  card.style.background  = c.bg;
+  card.style.borderColor = c.border;
+  card.style.boxShadow   = "0 4px 24px "+c.glow;
+}
+function setFWStatus(elId, text, colorKey){
+  var e = ge(elId); if(!e) return;
+  var colors = {
+    green:"#6ee7b7", red:"#fca5a5", amber:"#fde68a", dark:"#94a3b8"
+  };
+  e.textContent = text;
+  e.style.color = colors[colorKey] || colors.dark;
+}
+
+// MESS
+listenPlace("mess",T_MESS,function(d){
+  if(!d){ paintFW("mess-card","dark"); setFWStatus("mess-avail","Not Updated","dark"); ge("mess-ts").textContent=""; return; }
+  if(d.status==="Food Available"){ paintFW("mess-card","green"); setFWStatus("mess-avail","✅ Food Available","green"); }
+  else { paintFW("mess-card","red"); setFWStatus("mess-avail","❌ Not Available","red"); }
+  ge("mess-ts").textContent=ago(d.ts);
+});
+
+// NANDINI
+listenPlace("nandini",T_NANDINI,function(d){
+  if(!d){ paintFW("nandini-card","dark"); setFWStatus("nandini-avail","Not Updated","dark"); ge("nandini-ts").textContent=""; return; }
+  if(d.status==="Open"){ paintFW("nandini-card","green"); setFWStatus("nandini-avail","✅ Open","green"); }
+  else { paintFW("nandini-card","red"); setFWStatus("nandini-avail","🔒 Closed","red"); }
+  ge("nandini-ts").textContent=ago(d.ts);
+});
+
+// NESCAFE
+listenPlace("nescafe",T_NESCAFE,function(d){
+  if(!d){ paintFW("nescafe-card","dark"); setFWStatus("nescafe-avail","Not Updated","dark"); ge("nescafe-ts").textContent=""; return; }
+  if(d.status==="Open"){ paintFW("nescafe-card","green"); setFWStatus("nescafe-avail","✅ Open","green"); }
+  else { paintFW("nescafe-card","red"); setFWStatus("nescafe-avail","🔒 Closed","red"); }
+  ge("nescafe-ts").textContent=ago(d.ts);
+});
+
+// GYM
+listenPlace("gym",T_GYM,function(d){
+  if(!d){ paintFW("gym-card","dark"); setFWStatus("gym-avail","Not Updated","dark"); ge("gym-ts").textContent=""; return; }
+  if(d.status==="Open"){ paintFW("gym-card","green"); setFWStatus("gym-avail","✅ Open","green"); }
+  else if(d.status==="Open · Crowded"){ paintFW("gym-card","amber"); setFWStatus("gym-avail","⚠️ Open · Crowded","amber"); }
+  else { paintFW("gym-card","red"); setFWStatus("gym-avail","🔒 Closed","red"); }
+  ge("gym-ts").textContent=ago(d.ts);
+});
+
 // BADMINTON
 listenPlace("bad",T_BAD,function(d){
   var s=ge("bad-avail"),tEl=ge("bad-ts");
@@ -653,7 +788,48 @@ function adminRow(place, options){
 function openModal(place){
   var h='<div class="mh"><span>';
 
-  if(place==='bad'){
+  if(place==='mess'){
+    h+='🍽️ Mess</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_MESS+' confirmations to update</p>';
+    h+='<div class="bst">'+
+      '<button class="mb g" onclick="doVote(\'mess\',\'Food Available\','+T_MESS+')">✅ Food Available</button>'+
+      '<button class="mb r" onclick="doVote(\'mess\',\'Not Available\','+T_MESS+')">❌ Not Available</button>'+
+    '</div>'+
+    adminRow('mess',[{v:'Food Available',l:'✅ Food Available'},{v:'Not Available',l:'❌ Not Available'}])+
+    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+
+  } else if(place==='nandini'){
+    h+='🥛 Nandini</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NANDINI+' confirmations to update</p>';
+    h+='<div class="bst">'+
+      '<button class="mb g" onclick="doVote(\'nandini\',\'Open\','+T_NANDINI+')">✅ Open</button>'+
+      '<button class="mb r" onclick="doVote(\'nandini\',\'Closed\','+T_NANDINI+')">🔒 Closed</button>'+
+    '</div>'+
+    adminRow('nandini',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
+    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+
+  } else if(place==='nescafe'){
+    h+='☕ Nescafé</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_NESCAFE+' confirmations to update</p>';
+    h+='<div class="bst">'+
+      '<button class="mb g" onclick="doVote(\'nescafe\',\'Open\','+T_NESCAFE+')">✅ Open</button>'+
+      '<button class="mb r" onclick="doVote(\'nescafe\',\'Closed\','+T_NESCAFE+')">🔒 Closed</button>'+
+    '</div>'+
+    adminRow('nescafe',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
+    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+
+  } else if(place==='gym'){
+    h+='🏋️ Gym</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Needs '+T_GYM+' confirmation to update</p>';
+    h+='<div class="bst">'+
+      '<button class="mb g" onclick="doVote(\'gym\',\'Open\','+T_GYM+')">✅ Open</button>'+
+      '<button class="mb a" onclick="doVote(\'gym\',\'Open · Crowded\','+T_GYM+')">⚠️ Open · Crowded</button>'+
+      '<button class="mb r" onclick="doVote(\'gym\',\'Closed\','+T_GYM+')">🔒 Closed</button>'+
+    '</div>'+
+    adminRow('gym',[{v:'Open',l:'✅ Open'},{v:'Open · Crowded',l:'⚠️ Crowded'},{v:'Closed',l:'🔒 Closed'}])+
+    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+
+  } else if(place==='bad'){
     h+='🏸 Badminton</span><button class="mx" onclick="closeModal()">✕</button></div>';
     h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">How many courts FREE? (needs '+T_BAD+')</p>';
     h+='<div class="bst">'+
