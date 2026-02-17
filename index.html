@@ -1146,3 +1146,93 @@ initNotif();
   br.insertAdjacentElement('afterend', campusLink);
 })();
 </script>
+
+
+<script>
+(function () {
+  function setBorder(cardId, state) {
+    var card = document.getElementById(cardId);
+    if (!card) return;
+
+    if (state === "yes") {
+      card.style.setProperty("border-color", "#22c55e", "important"); // green
+      card.style.setProperty("border-width", "2px", "important");
+    } else if (state === "no") {
+      card.style.setProperty("border-color", "#ef4444", "important"); // red
+      card.style.setProperty("border-width", "2px", "important");
+    } else {
+      card.style.setProperty("border-color", "#242438", "important"); // neutral
+      card.style.setProperty("border-width", "1px", "important");
+    }
+  }
+
+  function norm(t) {
+    return String(t || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function badgeState(id, yesWords, noWords) {
+    var el = document.getElementById(id);
+    if (!el) return "neutral";
+    var text = norm(el.textContent);
+
+    for (var i = 0; i < yesWords.length; i++) {
+      if (text.indexOf(yesWords[i]) !== -1) return "yes";
+    }
+    for (var j = 0; j < noWords.length; j++) {
+      if (text.indexOf(noWords[j]) !== -1) return "no";
+    }
+    return "neutral";
+  }
+
+  function applyAllBorders() {
+    // Mess
+    setBorder(
+      "mess-card",
+      badgeState("mess-avail", ["food available", "available", "open", "yes"], ["food not available", "not available", "closed", "no"])
+    );
+
+    // Gym (treat crowded as YES because gym is open)
+    setBorder(
+      "gym-card",
+      badgeState("gym-status", ["open", "free", "crowded", "yes"], ["closed", "no"])
+    );
+
+    // Nescafe
+    setBorder(
+      "nescafe-card",
+      badgeState("nescafe-avail", ["open", "available", "yes"], ["closed", "not available", "no"])
+    );
+
+    // Nandini
+    setBorder(
+      "nandini-card",
+      badgeState("nandini-avail", ["open", "available", "yes"], ["closed", "not available", "no"])
+    );
+
+    // Badminton (Full = NO, any "X Free" = YES)
+    var badText = norm((document.getElementById("bad-avail") || {}).textContent || "");
+    var badState = "neutral";
+    if (badText.indexOf("full") !== -1) badState = "no";
+    else if (/\b[1-4]\s*free\b/.test(badText) || badText.indexOf("free") !== -1) badState = "yes";
+    setBorder("bad-card", badState);
+
+    // Doctor
+    setBorder(
+      "doc-card",
+      badgeState("doc-avail", ["on campus", "available", "yes"], ["not available", "off campus", "no"])
+    );
+  }
+
+  // Run now + keep syncing (because your app is realtime)
+  applyAllBorders();
+  setInterval(applyAllBorders, 800);
+
+  // Also react immediately to DOM updates
+  var observer = new MutationObserver(applyAllBorders);
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+})();
+</script>
