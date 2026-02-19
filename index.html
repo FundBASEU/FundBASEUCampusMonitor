@@ -945,6 +945,58 @@ body.light-theme .night-overlay-txt{color:#9980c0;}
   background:#10b981;animation:pulse 2s infinite;
 }
 
+@keyframes huntBanner{
+  from{opacity:0;transform:translateY(-20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ═══ HUNT ALERT BAR ═══ */
+#hunt-alert-bar{
+  margin:10px 0 0;
+  border-radius:var(--radius-md);
+  overflow:hidden;
+  animation:huntPulse 2s ease-in-out infinite;
+}
+@keyframes huntPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0);}
+  50%{box-shadow:0 0 18px 4px rgba(251,191,36,0.35);}
+}
+.hunt-alert-inner{
+  background:linear-gradient(135deg,#451a03,#78350f,#451a03);
+  border:1px solid rgba(251,191,36,0.5);
+  padding:11px 16px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.hunt-alert-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#fbbf24;flex-shrink:0;
+  animation:pulse 1s infinite;
+}
+.hunt-alert-text{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.82em;font-weight:800;
+  color:#fde68a;flex:1;letter-spacing:0.2px;
+}
+.hunt-alert-count{
+  font-size:0.7em;font-weight:700;
+  background:rgba(251,191,36,0.2);
+  border:1px solid rgba(251,191,36,0.4);
+  color:#fbbf24;padding:2px 9px;border-radius:20px;
+}
+
+/* ═══ FHUNT active glow ═══ */
+.fhunt-wrap.hunt-active{
+  border-color:rgba(251,191,36,0.5);
+  box-shadow:0 0 24px rgba(251,191,36,0.2),var(--shadow-card);
+}
+.fhunt-wrap.hunt-active::before{
+  background:linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b);
+  animation:shimmer 2s infinite;
+}
+.fhunt-wrap.hunt-active .fhunt-title{
+  color:#fbbf24;
+}
+
 /* ═══ FACULTY HUNT ═══ */
 .fhunt-wrap{
   margin:14px 0;
@@ -1194,22 +1246,11 @@ if(localStorage.getItem("theme")==="dark") document.body.classList.remove("light
       <div class="tc" id="doc-ts"></div>
     </div>
 
-    <!-- FACULTY HUNT — wide bar -->
-    <div class="card bar-card" onclick="openFacultyHuntPost()">
-      <div class="bar-left">
-        <span class="bar-icon">🎯</span>
-        <div>
-          <div class="bar-title">Admin · Faculty Hunt</div>
-          <div class="tc" id="fac-summary" style="text-align:left;margin-top:3px;">looking for someone? post a hunt</div>
-        </div>
-      </div>
-      <div class="bar-right">
-        <span class="sbdg s-purple bar-sbdg">Post Hunt →</span>
-      </div>
-    </div>
-
   </div><!-- end grid -->
   </div><!-- end night-mask-wrap -->
+
+  <!-- HUNT IS ON ALERT BAR -->
+  <div id="hunt-alert-bar" style="display:none;"></div>
 
   <!-- FACULTY HUNT LIVE FEED -->
   <div class="fhunt-wrap" id="fhunt-wrap">
@@ -1218,10 +1259,10 @@ if(localStorage.getItem("theme")==="dark") document.body.classList.remove("light
         <div class="fhunt-title">🎯 Admin · Faculty Hunt</div>
         <div class="fhunt-sub">Live hunting board · requests auto-delete in 15 min</div>
       </div>
-      <button class="fhunt-post-btn" onclick="openFacultyHuntPost()">+ New Hunt</button>
+      <button class="fhunt-post-btn" onclick="openFacultyHuntPost()">🎯 Start a Hunt</button>
     </div>
     <div class="fhunt-list" id="fhunt-list">
-      <div class="fhunt-empty">No active hunts right now · tap "New Hunt" to start one</div>
+      <div class="fhunt-empty">No active hunts · tap "Start a Hunt" to begin</div>
     </div>
   </div>
 
@@ -1312,20 +1353,30 @@ var T_MESS=3, T_GYM=1, T_NESCAFE=2, T_NANDINI=2, T_BAD=2, T_DOC=1, T_PROF=1;
 // Time thresholds (ms)
 var HB_VOTES=5, HB_TTL=10000, IMM_DV=5, ANN_EXP=43200000;
 
-// Faculty list — 12 professors
+// Faculty + Admin list
 var FACULTY = [
-  "Dr.Bidur",
-  "Dr.Megha",
-  "Dr.Irfan",
-  "Dr.Shameer",
-  "Dr.Nageshwar",
-  "Dr.Ishfaq",
-  "Dr.Muzaffar",
-  "Dr.Kasturi",
-  "Dr.Moushmi",
-  "Dr.Sushmita",
+  // Professors
+  "Dr. Bidur",
+  "Dr. Megha",
+  "Dr. Irfan",
+  "Dr. Shameer",
+  "Dr. Nageshwar",
+  "Dr. Ishfaq",
+  "Dr. Muzaffar",
+  "Dr. Kasturi",
+  "Dr. Moushmi",
+  "Dr. Sushmita",
+  "Dr. Asha",
   "Dean",
-  "Dr.Asha"
+  // Admin & Staff
+  "Manjunath (Boys Hostel Warden)",
+  "Girls Hostel Warden",
+  "Ganesh",
+  "Chennaiah (Legend)",
+  "Librarian",
+  "Exams Dept",
+  "Registrar",
+  "VC"
 ];
 
 // ═══════════════════════════════════════════════
@@ -1660,17 +1711,47 @@ db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numCh
 // ═══════════════════════════════════════════════
 var FHUNT_TTL = 900000; // 15 minutes
 
+function showHuntPopup(profName){
+  // Remove any existing popup
+  var old=ge("hunt-popup"); if(old) old.remove();
+  var pop=document.createElement("div");
+  pop.id="hunt-popup";
+  pop.style.cssText="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;width:100%;max-width:520px;pointer-events:none;";
+  pop.innerHTML='<div style="margin:12px 16px;background:linear-gradient(135deg,#451a03,#78350f);border:1px solid rgba(251,191,36,0.6);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(251,191,36,0.3);animation:huntBanner 0.4s cubic-bezier(0.34,1.56,0.64,1);">'+
+    '<div style="font-size:1.6em;animation:pulse 1s infinite;">🎯</div>'+
+    '<div><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:0.92em;font-weight:800;color:#fbbf24;letter-spacing:-0.2px;">HUNT IS ON!</div>'+
+    '<div style="font-size:0.75em;color:#fde68a;margin-top:2px;">Someone\'s looking for '+esc(profName)+' — can you help spot them?</div></div>'+
+  '</div>';
+  document.body.appendChild(pop);
+  setTimeout(function(){ pop.remove(); },4000);
+}
+
 function openFacultyHuntPost(){
-  var facOptions = FACULTY.map(function(name,i){
-    return '<option value="'+i+'">'+esc(name)+'</option>';
+  // Split into two groups for cleaner display
+  var profs=[
+    "Dr. Bidur","Dr. Megha","Dr. Irfan","Dr. Shameer","Dr. Nageshwar",
+    "Dr. Ishfaq","Dr. Muzaffar","Dr. Kasturi","Dr. Moushmi","Dr. Sushmita","Dr. Asha","Dean"
+  ];
+  var admin=[
+    "Manjunath (Boys Hostel Warden)","Girls Hostel Warden","Ganesh",
+    "Chennaiah (Legend)","Librarian","Exams Dept","Registrar","VC"
+  ];
+  var profOpts=profs.map(function(name,i){
+    return '<option value="'+FACULTY.indexOf(name)+'">👨‍🏫 '+esc(name)+'</option>';
   }).join('');
-  var h='<div class="mh"><span>🎯 Post a Faculty Hunt</span><button class="mx" onclick="closeModal()">✕</button></div>';
-  h+='<p style="color:var(--text-muted);font-size:0.82em;margin-bottom:14px;">Looking for a professor? Post it — anyone online can help spot them.</p>';
-  h+='<select class="msel" id="fh-prof-sel" style="margin-top:0;">'+facOptions+'</select>';
-  h+='<input class="mi" id="fh-note" maxlength="50" placeholder="Optional note · max 50 chars (e.g. Need signature)" style="margin-top:10px;">';
+  var adminOpts=admin.map(function(name){
+    return '<option value="'+FACULTY.indexOf(name)+'">🏢 '+esc(name)+'</option>';
+  }).join('');
+  var h='<div class="mh"><span>🎯 Start a Faculty Hunt</span><button class="mx" onclick="closeModal()">✕</button></div>';
+  h+='<p style="color:var(--text-muted);font-size:0.8em;margin-bottom:12px;">Post a hunt — anyone online can help you find them on campus.</p>';
+  h+='<select class="msel" id="fh-prof-sel" style="margin-top:0;">'+
+    '<optgroup label="👨‍🏫 Faculty">'+profOpts+'</optgroup>'+
+    '<optgroup label="🏢 Admin & Staff">'+adminOpts+'</optgroup>'+
+  '</select>';
+  h+='<input class="mi" id="fh-note" maxlength="50" placeholder='+"'Optional: why are you looking for them? (max 50 chars)'"+'  style="margin-top:10px;">';
   h+='<div style="font-size:0.62em;color:var(--text-faint);text-align:right;margin-top:3px;" id="fh-note-ct">0/50</div>';
-  h+='<div class="bst" style="margin-top:10px;">'+
-    '<button class="mb g" onclick="postFacHunt()">🎯 Post Hunt</button>'+
+  h+='<div class="bst" style="margin-top:12px;">'+
+    '<button class="mb" style="background:linear-gradient(135deg,#b45309,#d97706);color:white;" onclick="postFacHunt()">🎯 Launch Hunt</button>'+
     '<button class="mb x" onclick="closeModal()">Cancel</button>'+
   '</div>';
   ge("mbox").innerHTML=h;
@@ -1690,8 +1771,9 @@ function postFacHunt(){
     posterId:devId
   });
   logAct("🎯 Hunt posted: "+name);
-  toast("🎯 Hunt posted! Others can now help spot them.");
   closeModal();
+  // Show popup for the poster
+  showHuntPopup(name);
 }
 
 function respondToHunt(huntId, type, profName){
@@ -1722,18 +1804,37 @@ function sendSpottedNote(huntId, profName){
 
 function renderFacHunts(hunts){
   var list=ge("fhunt-list"); if(!list) return;
-  if(!hunts.length){ list.innerHTML='<div class="fhunt-empty">No active hunts right now · tap "New Hunt" to start one</div>'; return; }
+  var wrap=ge("fhunt-wrap");
+  var alertBar=ge("hunt-alert-bar");
+
+  // Toggle active glow on the card
+  if(wrap) wrap.classList.toggle("hunt-active", hunts.length>0);
+
+  // Hunt alert bar at top
+  if(alertBar){
+    if(hunts.length>0){
+      alertBar.style.display="block";
+      var names=hunts.map(function(h){ return h.profName.split(" ")[0]; }).join(", ");
+      alertBar.innerHTML='<div class="hunt-alert-inner">'+
+        '<div class="hunt-alert-dot"></div>'+
+        '<div class="hunt-alert-text">🎯 HUNT IS ON — '+esc(names)+' '+( hunts.length===1?'is being':'are being')+' looked for on campus</div>'+
+        '<div class="hunt-alert-count">'+hunts.length+' active</div>'+
+      '</div>';
+    } else {
+      alertBar.style.display="none";
+    }
+  }
+
+  if(!hunts.length){ list.innerHTML='<div class="fhunt-empty">No active hunts · tap "Start a Hunt" to begin</div>'; return; }
   var now=Date.now();
   list.innerHTML=hunts.map(function(h){
     var rem=Math.max(0,FHUNT_TTL-(now-h.ts));
     var mins=Math.ceil(rem/60000);
     var resps=h.responses?Object.values(h.responses):[];
-    // Tally
     var spotted=resps.filter(function(r){return r.type==="spotted";});
     var cabin=resps.filter(function(r){return r.type==="cabin";});
     var inclass=resps.filter(function(r){return r.type==="inclass";});
     var notseen=resps.filter(function(r){return r.type==="notseen";});
-    // Latest spotted location
     var latestSpot=spotted.length?spotted.sort(function(a,b){return b.ts-a.ts;})[0]:null;
     var alreadyVoted=h.responses&&h.responses[devId];
     var chips='';
@@ -1773,12 +1874,20 @@ function renderFacHunts(hunts){
 function cleanFacHunts(){ db.ref("facHunts").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>FHUNT_TTL) db.ref("facHunts/"+c.key).remove(); }); }); }
 cleanFacHunts(); setInterval(cleanFacHunts,60000);
 
+var fhuntKnown={};
 db.ref("facHunts").orderByChild("ts").on("value",function(snap){
   var hunts=[], now=Date.now();
   snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<FHUNT_TTL) hunts.push({id:c.key,...d}); });
   hunts.reverse();
-  // Update tile summary
-  setText("fac-summary", hunts.length?hunts.length+" active hunt"+(hunts.length!==1?"s":""):"looking for someone? post a hunt");
+
+  // Detect new hunts posted by others → show popup
+  hunts.forEach(function(h){
+    if(!fhuntKnown[h.id] && h.posterId!==devId){
+      showHuntPopup(h.profName);
+    }
+    fhuntKnown[h.id]=true;
+  });
+
   renderFacHunts(hunts);
 });
 
