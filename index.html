@@ -4,1335 +4,754 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FundBASEU Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <style>
-/* ═══ CSS CUSTOM PROPERTIES ═══ */
-:root{
-  --bg-main:#0b0b18;
-  --bg-card:#141428;
-  --bg-panel:#1a1a32;
-  --bg-raised:#1e1e38;
-
-  --text-main:#f0f0ff;
-  --text-muted:#8892aa;
-  --text-faint:#4a5568;
-
-  --accent-violet:#8b5cf6;
-  --accent-blue:#3b82f6;
-  --accent-teal:#14b8a6;
-  --accent-green:#10b981;
-
-  --border-main:#1e1e3a;
-  --border-soft:#252542;
-  --shadow-main:0 8px 32px rgba(0,0,0,0.55);
-  --shadow-card:0 4px 20px rgba(0,0,0,0.4);
-  --radius-lg:18px;
-  --radius-md:14px;
-  --radius-sm:10px;
-}
-
-body.light-theme{
-  --bg-main:#f0f2f8;
-  --bg-card:#ffffff;
-  --bg-panel:#eef0f8;
-  --bg-raised:#e8eaf4;
-
-  --text-main:#111827;
-  --text-muted:#4b5563;
-  --text-faint:#9ca3af;
-
-  --border-main:#dde1f0;
-  --border-soft:#e5e8f5;
-  --shadow-main:0 6px 24px rgba(15,23,42,0.1);
-  --shadow-card:0 2px 12px rgba(15,23,42,0.07);
-}
-
-/* ═══ RESET & BASE ═══ */
-*{margin:0;padding:0;box-sizing:border-box;}
-
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg-main);
-  min-height:100vh;
-  padding:12px 14px 100px;
-  color:var(--text-main);
-  transition:background 0.3s ease,color 0.3s ease;
-  -webkit-font-smoothing:antialiased;
-}
-
-.container{max-width:600px;margin:0 auto;}
-
-/* ═══ TOAST ═══ */
-#toast{
-  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
-  background:var(--bg-raised);color:var(--text-main);border:1px solid var(--border-main);
-  padding:10px 20px;border-radius:30px;font-size:0.82em;font-weight:600;
-  opacity:0;transition:opacity 0.3s;z-index:9999;white-space:nowrap;
-  box-shadow:0 4px 20px rgba(0,0,0,0.4);pointer-events:none;
-}
-
-/* ═══ ADMIN BAR ═══ */
-#admin-bar{
-  display:none;position:fixed;top:10px;right:10px;
-  background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
-  color:#f87171;padding:5px 14px;border-radius:20px;font-size:0.7em;font-weight:700;
-  z-index:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
-}
-#admin-bar.show{display:block;}
-
-/* ═══ HEADER ═══ */
-header{text-align:center;margin-bottom:16px;padding-top:8px;}
-
-.header-top{
-  display:flex;align-items:center;justify-content:flex-end;
-  margin-bottom:10px;
-}
-
-#theme-toggle{
-  padding:7px 16px;
-  border-radius:20px;
-  border:1px solid var(--border-main);
-  background:var(--bg-card);
-  color:var(--text-muted);
-  font-weight:600;font-size:0.78em;
-  cursor:pointer;
-  font-family:'Plus Jakarta Sans',sans-serif;
-  transition:all 0.2s ease;
-  flex-shrink:0;
-}
-#theme-toggle:hover{
-  background:var(--bg-raised);
-  color:var(--text-main);
-}
-
-header h1{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1.75em;font-weight:800;
-  background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  letter-spacing:-0.5px;margin-bottom:4px;
-  line-height:1.2;
-}
-
-header p{font-size:0.74em;color:var(--text-muted);margin-bottom:10px;font-weight:500;}
-
-.header-links{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
-
-.upd-link{
-  display:inline-flex;align-items:center;gap:4px;
-  background:rgba(139,92,246,0.1);padding:5px 12px;
-  border-radius:14px;color:#a78bfa;text-decoration:none;
-  font-size:0.72em;font-weight:600;border:1px solid rgba(139,92,246,0.2);
-  transition:all 0.2s;
-}
-.upd-link:hover{background:rgba(139,92,246,0.18);}
-
-.cu-link{
-  display:inline-flex;align-items:center;gap:4px;
-  background:rgba(59,130,246,0.12);padding:5px 14px;
-  border-radius:14px;color:#60a5fa;text-decoration:none;
-  font-size:0.72em;font-weight:700;border:1px solid rgba(59,130,246,0.25);
-  transition:all 0.2s;
-}
-.cu-link:hover{background:rgba(59,130,246,0.2);}
-
-/* ═══ NOTIFICATION BANNER ═══ */
-.notif-banner{
-  display:none;background:linear-gradient(135deg,rgba(79,70,229,0.2),rgba(30,58,95,0.3));
-  border:1px solid rgba(99,102,241,0.4);border-radius:var(--radius-md);
-  padding:11px 14px;margin:10px 0;font-size:0.8em;color:#a5b4fc;
-  align-items:center;gap:10px;flex-wrap:wrap;
-}
-.notif-banner.show{display:flex;}
-.notif-btn{
-  background:#4f46e5;border:none;color:white;padding:6px 14px;
-  border-radius:8px;font-size:0.82em;font-weight:700;cursor:pointer;
-  font-family:'Plus Jakarta Sans',sans-serif;
-}
-
-/* ═══ MEAL BANNER — REDESIGNED ═══ */
-.meal-banner{
-  background:var(--bg-card);
-  border:1px solid var(--border-soft);
-  border-radius:var(--radius-lg);
-  padding:0;
-  margin:10px 0 14px;
-  overflow:hidden;
-  box-shadow:var(--shadow-card);
-  position:relative;
-}
-
-.meal-banner-inner{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:16px 20px 18px;
-  text-align:center;
-  background:linear-gradient(160deg,
-    rgba(99,102,241,0.08) 0%,
-    rgba(59,130,246,0.06) 50%,
-    rgba(20,184,166,0.05) 100%
-  );
-}
-
-.meal-banner-accent{
-  height:3px;
-  width:100%;
-  background:linear-gradient(90deg,#8b5cf6,#3b82f6,#14b8a6);
-}
-
-.meal-label{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.6em;font-weight:800;
-  color:var(--accent-violet);
-  letter-spacing:2.5px;text-transform:uppercase;
-  margin-bottom:4px;
-}
-
-.meal-time-row{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  margin-bottom:8px;
-}
-
-.meal-name{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1.6em;font-weight:800;
-  color:var(--text-main);
-  letter-spacing:-0.5px;
-}
-
-.meal-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--accent-blue);opacity:0.5;
-}
-
-.meal-day{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.9em;font-weight:600;
-  color:var(--text-muted);
-}
-
-.meal-menu-text{
-  font-size:0.84em;color:var(--text-muted);
-  line-height:1.65;font-weight:400;
-  max-width:420px;
-  margin:0 auto;
-}
-
-.meal-menu-items{
-  display:flex;flex-wrap:wrap;justify-content:center;gap:5px;
-  margin-top:10px;
-}
-.meal-item-chip{
-  background:rgba(99,102,241,0.1);
-  border:1px solid rgba(99,102,241,0.18);
-  color:var(--text-muted);
-  padding:3px 10px;border-radius:20px;
-  font-size:0.75em;font-weight:500;
-}
-
-body.light-theme .meal-item-chip{
-  background:rgba(99,102,241,0.08);
-  border-color:rgba(99,102,241,0.15);
-}
-
-/* ═══ STATS BAR ═══ */
-.stats-bar{
-  display:flex;justify-content:center;gap:24px;margin:4px 0 14px;
-  flex-wrap:wrap;
-}
-.s-box{
-  display:flex;align-items:center;gap:7px;
-  background:var(--bg-card);border:1px solid var(--border-main);
-  border-radius:30px;padding:5px 14px;
-  box-shadow:var(--shadow-card);
-}
-.s-num{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.92em;font-weight:700;color:var(--text-main);}
-.s-lbl{font-size:0.72em;color:var(--text-muted);font-weight:500;}
-
-/* ═══ SECTION LABEL ═══ */
-.sec-lbl{
-  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.63em;font-weight:800;
-  letter-spacing:2.5px;text-transform:uppercase;color:var(--text-faint);
-  margin:18px 0 10px 2px;
-}
-
-/* ═══ GRID — 4-col for small status tiles ═══ */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
-  margin-bottom:10px;
-}
-@media(min-width:400px){.grid{grid-template-columns:repeat(4,1fr);gap:10px;}}
-
-/* ═══ CARD — uniform small square tiles ═══ */
-.card{
-  border-radius:var(--radius-md);
-  padding:13px 12px 11px;
-  cursor:pointer;
-  border:1px solid var(--border-main);
-  transition:transform 0.2s,box-shadow 0.25s,background 0.4s,border-color 0.4s;
-  -webkit-tap-highlight-color:transparent;
-  position:relative;overflow:hidden;
-  background:var(--bg-card);
-  box-shadow:var(--shadow-card);
-  min-height:108px;
-  display:flex;flex-direction:column;
-  justify-content:space-between;
-  gap:3px;
-}
-.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-main);}
-.card:active{transform:scale(0.97);}
-
-/* Wide bar cards (Faculty, Suggest) — span full width */
-.card.bar-card{
-  grid-column:1/-1;
-  min-height:unset;
-  flex-direction:row;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:14px 18px;
-}
-.bar-card .bar-left{display:flex;align-items:center;gap:12px;}
-.bar-card .bar-icon{font-size:1.5em;line-height:1;}
-.bar-card .bar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.97em;font-weight:800;color:var(--text-main);}
-.bar-card .bar-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
-.bar-card .bar-sbdg{min-width:120px;text-align:center;}
-
-/* Tile inner layout */
-.tile-head{display:flex;align-items:flex-start;justify-content:space-between;}
-.tile-icon{font-size:1.5em;line-height:1;}
-.tile-name{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.78em;font-weight:800;
-  color:var(--text-main);
-  margin-top:4px;line-height:1.2;
-}
-.ct{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.78em;font-weight:800;color:var(--text-main);}
-.ci{font-size:1.2em;}
-.ch{display:flex;align-items:flex-start;justify-content:space-between;}
-
-/* ═══ STATUS BADGES ═══ */
-.sbdg{
-  display:block;padding:5px 11px;border-radius:20px;
-  font-size:0.74em;font-weight:700;margin:2px 0;text-align:center;width:100%;
-  transition:all 0.3s;
-}
-.s-green{background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.35);}
-.s-red{background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.35);}
-.s-amber{background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);}
-.s-blue{background:rgba(59,130,246,0.2);color:#93c5fd;border:1px solid rgba(59,130,246,0.35);}
-.s-gray{background:rgba(100,116,139,0.15);color:var(--text-muted);border:1px solid rgba(100,116,139,0.25);}
-.s-purple{background:rgba(139,92,246,0.2);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3);}
-.s-teal{background:rgba(20,184,166,0.2);color:#5eead4;border:1px solid rgba(20,184,166,0.35);}
-
-/* Light theme badge overrides */
-body.light-theme .s-green{background:rgba(16,185,129,0.12);color:#059669;}
-body.light-theme .s-red{background:rgba(239,68,68,0.1);color:#dc2626;}
-body.light-theme .s-amber{background:rgba(245,158,11,0.12);color:#d97706;}
-body.light-theme .s-blue{background:rgba(59,130,246,0.1);color:#2563eb;}
-body.light-theme .s-gray{background:rgba(100,116,139,0.1);color:#64748b;}
-body.light-theme .s-purple{background:rgba(139,92,246,0.1);color:#7c3aed;}
-body.light-theme .s-teal{background:rgba(20,184,166,0.12);color:#0d9488;}
-
-/* ═══ COMMUNITY BADGE ═══ */
-.cb{
-  display:inline-flex;align-items:center;gap:4px;
-  font-size:0.64em;font-weight:700;margin-top:4px;padding:3px 9px;
-  border-radius:8px;line-height:1.4;
-}
-.cb-ok{background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.25);}
-.cb-wait{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.25);}
-.cb-none{background:rgba(100,116,139,0.08);color:var(--text-faint);border:1px solid rgba(100,116,139,0.15);}
-
-.mc{font-size:0.7em;color:var(--text-muted);margin-top:5px;background:rgba(255,255,255,0.03);padding:5px 8px;border-radius:8px;line-height:1.45;}
-.tc{font-size:0.63em;color:var(--text-faint);margin-top:4px;text-align:center;}
-.vc{font-size:0.63em;color:var(--accent-violet);margin-top:2px;text-align:center;}
-
-/* ═══ ANNOUNCEMENTS — FIXED ═══ */
-.ann-wrap{
-  margin:12px 0;
-  border-radius:var(--radius-lg);
-  padding:18px;
-  background:var(--bg-card);
-  border:1px solid var(--border-soft);
-  box-shadow:var(--shadow-card);
-}
-
-.ann-wrap-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:14px;flex-wrap:wrap;gap:8px;
-}
-
-.ann-title{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.92em;font-weight:800;
-  color:var(--text-main);
-  display:flex;align-items:center;gap:8px;
-}
-.ann-title-badge{
-  font-size:0.65em;color:var(--text-muted);font-weight:400;
-  background:var(--bg-panel);border:1px solid var(--border-main);
-  padding:2px 8px;border-radius:10px;
-}
-
-.ann-post-btn{
-  background:rgba(139,92,246,0.12);
-  border:1px solid rgba(139,92,246,0.3);
-  color:#a78bfa;
-  padding:7px 16px;border-radius:10px;
-  font-size:0.75em;font-weight:700;cursor:pointer;
-  font-family:'Plus Jakarta Sans',sans-serif;
-  transition:all 0.2s ease;
-  display:inline-flex;align-items:center;gap:5px;
-}
-.ann-post-btn:hover{background:rgba(139,92,246,0.22);transform:translateY(-1px);}
-
-.ann-list-inner{display:flex;flex-direction:column;gap:10px;}
-
-.ann-card{
-  background:var(--bg-panel);
-  border:1px solid var(--border-main);
-  border-radius:var(--radius-sm);
-  padding:13px 15px;
-  transition:transform 0.2s ease,box-shadow 0.2s ease;
-  position:relative;
-  overflow:hidden;
-}
-.ann-card::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  border-radius:3px 0 0 3px;
-  background:var(--accent-violet);
-}
-.ann-card.tag-mess-card::before{background:#f59e0b;}
-.ann-card.tag-event-card::before{background:#3b82f6;}
-.ann-card.tag-academic-card::before{background:#10b981;}
-
-.ann-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-card);}
-
-.ann-txt{
-  color:var(--text-main);
-  font-size:0.87em;line-height:1.55;
-  margin-bottom:8px;
-  font-weight:500;
-}
-
-.ann-meta{
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  color:var(--text-muted);
-}
-
-.ann-empty{
-  text-align:center;color:var(--text-muted);
-  font-size:0.82em;padding:20px 14px;
-  background:var(--bg-panel);border-radius:var(--radius-sm);
-  border:1px dashed var(--border-main);
-}
-
-.ann-tag{font-size:0.65em;font-weight:700;padding:2px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:0.5px;}
-.tag-mess{background:rgba(245,158,11,0.15);color:#d97706;}
-.tag-event{background:rgba(59,130,246,0.15);color:#3b82f6;}
-.tag-academic{background:rgba(16,185,129,0.15);color:#059669;}
-.tag-general{background:rgba(100,116,139,0.12);color:var(--text-muted);}
-
-body.light-theme .tag-mess{background:rgba(245,158,11,0.12);}
-body.light-theme .tag-event{background:rgba(59,130,246,0.1);}
-body.light-theme .tag-academic{background:rgba(16,185,129,0.1);}
-
-.ann-ts{font-size:0.65em;color:var(--text-faint);}
-.ann-exp{font-size:0.65em;color:var(--text-faint);}
-.ann-del{
-  background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);
-  color:#f87171;padding:2px 7px;border-radius:6px;font-size:0.65em;
-  cursor:pointer;font-weight:700;margin-left:auto;
-}
-
-/* ═══ IMMEDIATE UPDATES ═══ */
-.imm-wrap{
-  margin-top:14px;border:1px solid rgba(245,158,11,0.25);
-  border-radius:var(--radius-lg);padding:16px;
-  background:var(--bg-card);box-shadow:var(--shadow-card);
-}
-.imm-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95em;font-weight:800;color:#fbbf24;margin-bottom:10px;}
-.imm-card{
-  background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);
-  border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;
-  font-size:0.83em;color:#fde68a;line-height:1.5;animation:fu .3s ease;
-}
-.imm-meta{font-size:0.65em;color:#78350f;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.dv-btn{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:#f87171;padding:2px 8px;border-radius:6px;font-size:0.7em;cursor:pointer;font-weight:700;}
-
-/* ═══ HEARTBEAT ═══ */
-.hb-wrap{
-  margin-top:14px;border:1px solid rgba(255,77,109,0.22);
-  border-radius:var(--radius-lg);padding:16px;
-  background:var(--bg-card);position:relative;overflow:hidden;
-  box-shadow:var(--shadow-card);
-}
-.hb-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ff4d6d,#ff758c,#ff4d6d);background-size:200%;animation:shimmer 2s infinite;}
-@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
-.hb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-.hb-tit{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95em;font-weight:800;color:#ff4d6d;display:flex;align-items:center;gap:6px;}
-.pdot{width:8px;height:8px;border-radius:50%;background:#ff4d6d;animation:pulse 1.2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
-.hb-rules{
-  background:rgba(255,77,109,0.06);border:1px solid rgba(255,77,109,0.16);
-  border-radius:var(--radius-sm);padding:10px 12px;margin:8px 0;
-  font-size:0.74em;color:#fca5a5;line-height:1.7;
-}
-.hb-rules strong{color:#ff4d6d;display:block;margin-bottom:3px;font-family:'Plus Jakarta Sans',sans-serif;}
-.hb-row{display:flex;gap:8px;margin:8px 0 2px;}
-.hb-in{
-  flex:1;background:rgba(255,255,255,0.05);
-  border:1px solid var(--border-main);border-radius:var(--radius-sm);
-  padding:9px 11px;color:var(--text-main);font-size:0.83em;
-  font-family:'Inter',sans-serif;outline:none;
-  transition:border-color 0.2s;
-}
-.hb-in:focus{border-color:#ff4d6d;}
-.hb-in::placeholder{color:var(--text-faint);}
-.chct{font-size:0.65em;color:var(--text-faint);text-align:right;margin-bottom:6px;}
-.chct.warn{color:#f59e0b;}
-.btn-hb{
-  background:#ff4d6d;color:white;border:none;border-radius:var(--radius-sm);
-  padding:9px 14px;font-weight:700;font-size:0.83em;cursor:pointer;
-  font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap;transition:opacity 0.2s;
-}
-.btn-hb:hover{opacity:0.88;}
-.hb-feed{display:flex;flex-direction:column;gap:7px;margin-top:8px;max-height:280px;overflow-y:auto;}
-.hb-card{
-  background:rgba(255,77,109,0.06);border:1px solid rgba(255,77,109,0.16);
-  border-radius:var(--radius-sm);padding:10px 12px;display:flex;gap:10px;
-  align-items:center;animation:fu .3s ease;
-}
-@keyframes fu{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.hb-txt{font-size:0.83em;color:#fca5a5;flex:1;line-height:1.4;}
-.hb-r{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:44px;}
-.uv-btn{
-  background:rgba(255,77,109,0.15);border:1px solid rgba(255,77,109,0.28);
-  color:#ff4d6d;border-radius:8px;padding:4px 7px;font-size:0.76em;
-  font-weight:700;cursor:pointer;width:100%;text-align:center;
-}
-.uv-btn.voted{opacity:0.4;cursor:default;}
-.tbar{height:2px;background:rgba(255,77,109,0.12);border-radius:2px;margin-top:5px;overflow:hidden;}
-.tfil{height:100%;background:#ff4d6d;border-radius:2px;transition:width 1s linear;}
-.hb-empty{text-align:center;color:var(--text-faint);font-size:0.78em;padding:18px;}
-
-/* ═══ MODAL ═══ */
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:flex-end;justify-content:center;}
-.modal.active{display:flex;}
-.mbox{
-  background:var(--bg-card);border-radius:24px 24px 0 0;
-  padding:22px 18px 38px;width:100%;max-width:520px;
-  max-height:90vh;overflow-y:auto;
-  border:1px solid var(--border-main);border-bottom:none;
-  animation:su .28s ease;
-}
-@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.mh{
-  font-family:'Plus Jakarta Sans',sans-serif;font-size:1.2em;font-weight:800;
-  color:var(--text-main);margin-bottom:16px;
-  display:flex;justify-content:space-between;align-items:center;
-}
-.mx{
-  background:var(--bg-panel);border:1px solid var(--border-main);
-  color:var(--text-muted);width:30px;height:30px;border-radius:50%;
-  cursor:pointer;font-size:0.9em;display:flex;align-items:center;justify-content:center;
-}
-.bst{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
-.mb{
-  padding:13px;border:none;border-radius:11px;font-size:0.92em;
-  font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
-  transition:opacity 0.15s;
-}
-.mb:active{opacity:0.85;}
-.mb.g{background:#10b981;color:white;}
-.mb.r{background:#ef4444;color:white;}
-.mb.a{background:#f59e0b;color:white;}
-.mb.t{background:#0d9488;color:white;}
-.mb.x{background:var(--bg-panel);color:var(--text-muted);margin-top:6px;border:1px solid var(--border-main);}
-.mi{
-  width:100%;background:var(--bg-panel);border:1px solid var(--border-main);
-  border-radius:10px;padding:11px;color:var(--text-main);font-size:0.88em;
-  font-family:'Inter',sans-serif;outline:none;margin-top:8px;
-  transition:border-color 0.2s;
-}
-.mi:focus{border-color:var(--accent-violet);}
-.msel{
-  width:100%;background:var(--bg-panel);border:1px solid var(--border-main);
-  border-radius:10px;padding:11px;color:var(--text-main);font-size:0.88em;
-  font-family:'Inter',sans-serif;outline:none;margin-top:8px;
-}
-.adm-sec{margin-top:14px;padding-top:12px;border-top:1px solid rgba(239,68,68,0.2);}
-.adm-lbl{font-size:0.72em;color:#ef4444;font-weight:700;margin-bottom:8px;}
-.adm-row{display:flex;flex-wrap:wrap;gap:8px;}
-.adm-btn{
-  flex:1;min-width:80px;padding:9px 8px;
-  background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.22);
-  color:#fca5a5;border-radius:9px;font-size:0.8em;font-weight:700;cursor:pointer;
-  font-family:'Plus Jakarta Sans',sans-serif;text-align:center;
-}
-
-/* ═══ BUTTONS ═══ */
-.ref-btn{
-  position:fixed;bottom:20px;right:16px;
-  background:linear-gradient(135deg,#6366f1,#8b5cf6);
-  color:white;border:none;border-radius:30px;padding:11px 18px;
-  font-size:0.82em;font-weight:700;cursor:pointer;
-  box-shadow:0 4px 16px rgba(99,102,241,0.45);z-index:999;
-  font-family:'Plus Jakarta Sans',sans-serif;transition:transform 0.15s;
-}
-.ref-btn:hover{transform:scale(1.04);}
-
-/* ═══ CARD COLOR — DARK GRADIENT ═══ */
-/* Light theme overrides — flatter colors */
-body.light-theme .card[style*="linear-gradient"]{
-  background:var(--bg-card) !important;
-}
-
-/* ═══ FOOTER ═══ */
-.site-footer{
-  margin-top:28px;
-  padding-bottom:10px;
-}
-
-.footer-divider{
-  height:1px;
-  background:linear-gradient(90deg,transparent,var(--border-main),var(--border-main),transparent);
-  margin-bottom:20px;
-}
-
-.footer-inner{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:14px;
-  text-align:center;
-}
-
-.footer-brand{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:3px;
-}
-
-.footer-logo-text{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1em;
-  font-weight:800;
-  background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  background-clip:text;
-  letter-spacing:-0.3px;
-}
-
-.footer-tagline{
-  font-size:0.65em;
-  color:var(--text-faint);
-  font-weight:500;
-  letter-spacing:0.3px;
-}
-
-.footer-meta{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:8px;
-}
-
-.footer-devs{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-
-.footer-dev-label{
-  font-size:0.7em;
-  color:var(--text-muted);
-  font-weight:500;
-}
-
-.footer-dev-names{
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-
-.dev-chip{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.72em;
-  font-weight:700;
-  padding:3px 11px;
-  border-radius:20px;
-  background:rgba(139,92,246,0.1);
-  border:1px solid rgba(139,92,246,0.25);
-  color:#a78bfa;
-}
-
-body.light-theme .dev-chip{
-  background:rgba(139,92,246,0.08);
-  border-color:rgba(139,92,246,0.2);
-  color:#7c3aed;
-}
-
-.footer-amp{
-  font-size:0.7em;
-  color:var(--text-faint);
-  font-weight:600;
-}
-
-.footer-copy{
-  font-size:0.63em;
-  color:var(--text-faint);
-  font-weight:500;
-  letter-spacing:0.2px;
-}
-
-/* ═══ MOBILE ═══ */
-@media(max-width:399px){
-  body{padding:10px 10px 100px;}
-  header h1{font-size:1.4em;}
-  .grid{grid-template-columns:repeat(2,1fr);gap:8px;}
-  .card{padding:11px 10px 9px;min-height:100px;}
-  .tile-icon{font-size:1.3em;}
-  .tile-name{font-size:0.73em;}
-  .sbdg{font-size:0.68em;padding:4px 8px;}
-  .cb{font-size:0.58em;}
-  .meal-name{font-size:1.3em;}
-  .ann-wrap{padding:0;}
-  .cu-tile-title{font-size:1em;}
-  .bar-card{padding:12px 14px;}
-}
-/* ═══ CAMPUS UNO BIG TILE ═══ */
-.campus-uno-tile{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  margin:14px 0;
-  padding:20px 22px;
-  border-radius:var(--radius-lg);
-  text-decoration:none;
-  background:linear-gradient(135deg,#1e1b4b 0%,#1e3a8a 55%,#0c4a6e 100%);
-  border:1px solid rgba(99,102,241,0.45);
-  box-shadow:0 8px 28px rgba(99,102,241,0.25);
-  cursor:pointer;
-  transition:transform 0.2s,box-shadow 0.2s;
-  -webkit-tap-highlight-color:transparent;
-}
-.campus-uno-tile:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(99,102,241,0.38);}
-.campus-uno-tile:active{transform:scale(0.98);}
-.cu-tile-left{display:flex;align-items:center;gap:14px;}
-.cu-tile-icon{
-  font-size:2em;line-height:1;
-  background:rgba(255,255,255,0.12);
-  padding:10px;border-radius:12px;
-  border:1px solid rgba(255,255,255,0.15);
-}
-.cu-tile-title{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1.1em;font-weight:800;
-  color:#ffffff;
-  letter-spacing:-0.3px;
-}
-.cu-tile-sub{
-  font-size:0.78em;color:rgba(255,255,255,0.6);
-  font-weight:400;margin-top:2px;
-}
-.cu-tile-arrow{
-  font-size:1.5em;color:rgba(255,255,255,0.7);
-  font-weight:300;flex-shrink:0;
-}
-body.light-theme .campus-uno-tile{
-  background:linear-gradient(135deg,#4f46e5 0%,#2563eb 55%,#0369a1 100%);
-  border-color:rgba(79,70,229,0.4);
-  box-shadow:0 6px 24px rgba(79,70,229,0.28);
-}
-
-/* ═══ ANNOUNCEMENTS — distinctive ═══ */
-.ann-wrap{
-  margin:12px 0;
-  border-radius:var(--radius-lg);
-  overflow:hidden;
-  /* Distinctive gradient border effect */
-  background:linear-gradient(var(--bg-main),var(--bg-main)) padding-box,
-             linear-gradient(135deg,#8b5cf6,#3b82f6,#14b8a6) border-box;
-  border:2px solid transparent;
-  box-shadow:0 6px 24px rgba(139,92,246,0.2);
-}
-.ann-wrap-inner{
-  background:var(--bg-card);
-  border-radius:calc(var(--radius-lg) - 2px);
-  padding:16px 18px 18px;
-}
-body.light-theme .ann-wrap{
-  background:linear-gradient(var(--bg-main),var(--bg-main)) padding-box,
-             linear-gradient(135deg,#8b5cf6,#3b82f6,#14b8a6) border-box;
-  box-shadow:0 4px 18px rgba(139,92,246,0.14);
+:root {
+  --bg: #0a0a14;
+  --bg-card: #111120;
+  --bg-panel: #16162a;
+  --bg-raised: #1c1c34;
+  --text: #eeeeff;
+  --muted: #7780a0;
+  --faint: #3a3f58;
+  --violet: #8b5cf6;
+  --blue: #3b82f6;
+  --teal: #14b8a6;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --pink: #ec4899;
+  --border: #1e1e36;
+  --border-soft: #222238;
+  --r-lg: 20px;
+  --r-md: 14px;
+  --r-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.6);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,0.4);
+}
+body.light {
+  --bg: #f0f1f8;
+  --bg-card: #fff;
+  --bg-panel: #eef0f8;
+  --bg-raised: #e6e8f4;
+  --text: #0f1020;
+  --muted: #4b5680;
+  --faint: #aab0c8;
+  --border: #dde1f0;
+  --border-soft: #e5e8f8;
+  --shadow: 0 6px 24px rgba(15,20,60,0.1);
+  --shadow-sm: 0 2px 10px rgba(15,20,60,0.07);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 100px;
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s, color .3s;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 0;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.brand {
+  font-size: 1.15em;
+  font-weight: 900;
+  background: linear-gradient(120deg,#a78bfa,#60a5fa,#34d399);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; letter-spacing: -0.5px;
+}
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.pill-btn {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--muted);
+  font-size: 0.75em; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all .2s;
+}
+.pill-btn:hover { background: var(--bg-raised); color: var(--text); }
+
+/* ── HERO ── */
+.hero {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 18px 18px 0;
+  text-align: center;
+}
+.hero-sub { font-size: .72em; color: var(--muted); font-weight: 500; margin-bottom: 12px; }
+
+/* ── WEEKEND COUNTDOWN ── */
+#wknd-banner {
+  max-width: 640px;
+  margin: 14px auto 0;
+  padding: 0 18px;
+}
+.wknd-card {
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  background: linear-gradient(135deg,#13071f,#1a0a40,#0a1a30);
+  border: 1px solid rgba(139,92,246,.4);
+  box-shadow: 0 0 40px rgba(139,92,246,.15);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.wknd-left { display: flex; flex-direction: column; gap: 2px; }
+.wknd-label { font-size: .62em; font-weight: 800; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase; }
+.wknd-msg { font-size: 1.05em; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.wknd-sub { font-size: .72em; color: rgba(255,255,255,.45); }
+.wknd-timer {
+  display: flex; gap: 8px; flex-shrink: 0;
+}
+.wt-blk {
+  text-align: center;
+  background: rgba(139,92,246,.15);
+  border: 1px solid rgba(139,92,246,.25);
+  border-radius: 10px;
+  padding: 6px 10px;
+  min-width: 46px;
+}
+.wt-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.2em; font-weight: 500;
+  color: #c4b5fd; display: block;
+}
+.wt-lbl { font-size: .52em; color: rgba(196,181,253,.5); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.wknd-today { color: #34d399; font-size: 1.3em; }
+
+/* ── SECTION WRAPPER ── */
+.wrap { max-width: 640px; margin: 0 auto; padding: 0 18px; }
+.sec-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 22px 0 10px;
+}
+.sec-title {
+  font-size: .65em; font-weight: 800; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--faint);
+}
+.sec-action {
+  font-size: .72em; font-weight: 700;
+  color: var(--violet); cursor: pointer;
+  background: none; border: none; font-family: inherit;
+  padding: 4px 10px; border-radius: 8px;
+  transition: background .2s;
+}
+.sec-action:hover { background: rgba(139,92,246,.1); }
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin: 14px auto 0; max-width: 640px; padding: 0 18px;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 13px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-n { font-size: .9em; font-weight: 800; color: var(--text); }
+.stat-l { font-size: .7em; color: var(--muted); font-weight: 500; }
+
+/* ── MEAL BLOCK ── */
+.meal-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.meal-stripe {
+  height: 3px;
+  background: linear-gradient(90deg,#a78bfa,#60a5fa,#34d399);
+}
+.meal-inner { padding: 16px 18px 18px; }
+.meal-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.meal-name-row { display: flex; align-items: center; gap: 8px; }
+.meal-emoji { font-size: 1.6em; line-height: 1; }
+.meal-name { font-size: 1.25em; font-weight: 900; letter-spacing: -.3px; color: var(--text); }
+.meal-day { font-size: .78em; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.meal-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.m-chip {
+  background: rgba(99,102,241,.1);
+  border: 1px solid rgba(99,102,241,.18);
+  color: var(--muted);
+  padding: 3px 10px; border-radius: 20px;
+  font-size: .73em; font-weight: 500;
+}
+
+/* ── MEAL RATING ── */
+.meal-rating-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.meal-rating-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.mrl { font-size: .72em; font-weight: 700; color: var(--muted); }
+.meal-avg {
+  display: flex; align-items: center; gap: 5px;
+  flex-shrink: 0;
+}
+.meal-avg-num {
+  font-size: 1.1em; font-weight: 900;
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
+}
+.meal-avg-stars { font-size: .85em; letter-spacing: 1px; }
+.meal-avg-count { font-size: .65em; color: var(--muted); }
+
+.star-row { display: flex; gap: 6px; }
+.star-btn {
+  font-size: 1.5em; background: none; border: none;
+  cursor: pointer; transition: transform .15s;
+  filter: grayscale(1) opacity(.4);
+  padding: 2px;
+}
+.star-btn.active { filter: none; }
+.star-btn:hover { transform: scale(1.2); filter: none; }
+.meal-rated-msg { font-size: .72em; color: var(--green); font-weight: 600; margin-top: 6px; }
+
+.bar-chart { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; }
+.bar-row { display: flex; align-items: center; gap: 6px; }
+.bar-lbl { font-size: .62em; color: var(--muted); width: 16px; text-align: right; font-family: 'DM Mono', monospace; }
+.bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #f59e0b, #fbbf24); transition: width .6s ease; }
+.bar-ct { font-size: .6em; color: var(--faint); min-width: 16px; font-family: 'DM Mono', monospace; }
+
+/* ── STATUS GRID ── */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 10px;
+}
+@media(min-width:400px) { .status-grid { grid-template-columns: repeat(3,1fr); } }
+
+.s-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 13px 12px;
+  cursor: pointer;
+  transition: transform .18s, box-shadow .2s, border-color .3s, background .3s;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; gap: 3px;
+  min-height: 100px; justify-content: space-between;
+  position: relative; overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.s-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.s-card:active { transform: scale(.97); }
+.s-card-icon { font-size: 1.4em; line-height: 1; margin-bottom: 2px; }
+.s-card-name { font-size: .78em; font-weight: 800; color: var(--text); line-height: 1.2; }
+.s-card-badge { display: block; padding: 4px 10px; border-radius: 16px; font-size: .7em; font-weight: 700; text-align: center; margin-top: 4px; }
+.s-card-ts { font-size: .6em; color: var(--faint); text-align: center; margin-top: 2px; }
+.s-card-cv { font-size: .62em; text-align: center; margin-top: 1px; }
+
+.bg-green { background: rgba(16,185,129,.12) !important; border-color: rgba(16,185,129,.4) !important; }
+.bg-red   { background: rgba(239,68,68,.1)  !important; border-color: rgba(239,68,68,.35) !important; }
+.bg-amber { background: rgba(245,158,11,.1) !important; border-color: rgba(245,158,11,.35) !important; }
+
+.bdg-green  { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.35); }
+.bdg-red    { background: rgba(239,68,68,.2);  color: #f87171; border: 1px solid rgba(239,68,68,.35); }
+.bdg-amber  { background: rgba(245,158,11,.2); color: #fbbf24; border: 1px solid rgba(245,158,11,.35); }
+.bdg-gray   { background: rgba(100,116,139,.15); color: var(--muted); border: 1px solid rgba(100,116,139,.25); }
+body.light .bdg-green { background: rgba(16,185,129,.1); color: #059669; }
+body.light .bdg-red   { background: rgba(239,68,68,.08); color: #dc2626; }
+body.light .bdg-amber { background: rgba(245,158,11,.1); color: #d97706; }
+
+/* ── CLASS SIGNAL ── */
+.class-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 8px;
+}
+@media(min-width:420px) { .class-signal-grid { grid-template-columns: repeat(3,1fr); } }
+@media(min-width:540px) { .class-signal-grid { grid-template-columns: repeat(4,1fr); } }
+
+.cs-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 11px;
+  cursor: pointer;
+  transition: transform .18s, box-shadow .2s, border-color .3s, background .3s;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; gap: 4px;
+  -webkit-tap-highlight-color: transparent;
+  position: relative; overflow: hidden;
+}
+.cs-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.cs-card:active { transform: scale(.97); }
+.cs-room-name {
+  font-family: 'DM Mono', monospace;
+  font-size: .92em; font-weight: 500;
+  color: var(--text); letter-spacing: -.3px;
+}
+.cs-badge {
+  display: block; padding: 4px 8px; border-radius: 10px;
+  font-size: .68em; font-weight: 700; text-align: center; margin-top: 2px;
+}
+.cs-timer { font-size: .58em; color: var(--faint); font-family: 'DM Mono', monospace; margin-top: 1px; }
+.cs-conf { font-size: .6em; color: var(--violet); margin-top: 1px; }
+.cs-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  position: absolute; top: 10px; right: 10px;
+}
+.cs-dot-green { background: #10b981; animation: cspulse 2s infinite; }
+.cs-dot-amber { background: #f59e0b; animation: cspulse 2s infinite; }
+.cs-dot-red   { background: #ef4444; }
+.cs-dot-gray  { background: var(--faint); }
+@keyframes cspulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+.cs-card.cs-active-green { background: rgba(16,185,129,.08) !important; border-color: rgba(16,185,129,.3) !important; }
+.cs-card.cs-active-amber { background: rgba(245,158,11,.08) !important; border-color: rgba(245,158,11,.3) !important; }
+.cs-card.cs-active-red   { background: rgba(239,68,68,.07)  !important; border-color: rgba(239,68,68,.28) !important; }
+
+/* ── LOST & FOUND ── */
+.lf-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.lf-stripe {
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #ec4899);
+}
+.lf-inner { padding: 16px 18px; }
+.lf-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.lf-icon { font-size: 1.5em; }
+.lf-title { font-size: 1em; font-weight: 800; color: var(--text); }
+.lf-sub { font-size: .72em; color: var(--muted); margin-top: 2px; }
+.lf-btns { display: flex; gap: 8px; }
+.lf-btn {
+  flex: 1; padding: 11px 8px; border-radius: var(--r-sm);
+  border: none; cursor: pointer; font-size: .82em; font-weight: 800;
+  font-family: inherit; transition: opacity .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.lf-btn-lost { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+.lf-btn-found { background: rgba(16,185,129,.15); color: #34d399; border: 1px solid rgba(16,185,129,.3); }
+.lf-btn:hover { opacity: .8; }
+
+.lf-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; max-height: 260px; overflow-y: auto; }
+.lf-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 13px;
+  display: flex; align-items: flex-start; gap: 10px;
+  animation: fadeUp .25s ease;
+}
+.lf-item-icon { font-size: 1.2em; flex-shrink: 0; }
+.lf-item-body { flex: 1; }
+.lf-item-desc { font-size: .84em; color: var(--text); font-weight: 600; line-height: 1.35; }
+.lf-item-loc { font-size: .7em; color: var(--muted); margin-top: 2px; }
+.lf-item-meta { font-size: .63em; color: var(--faint); margin-top: 3px; display: flex; gap: 6px; align-items: center; }
+.lf-type-lost  { background: rgba(239,68,68,.12); color: #f87171; padding: 1px 7px; border-radius: 6px; font-weight: 700; font-size: .9em; }
+.lf-type-found { background: rgba(16,185,129,.12); color: #34d399; padding: 1px 7px; border-radius: 6px; font-weight: 700; font-size: .9em; }
+.lf-resolve-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; color: var(--muted);
+  font-size: .65em; font-weight: 700; padding: 2px 7px;
+  cursor: pointer; font-family: inherit; margin-left: auto;
+}
+.lf-empty { text-align: center; color: var(--muted); font-size: .8em; padding: 18px; border: 1px dashed var(--border); border-radius: var(--r-sm); }
+
+/* ── ANNOUNCEMENTS ── */
+.ann-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.ann-inner { padding: 16px 18px; }
+.ann-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ann-title-row { font-size: 1em; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.ann-exp-badge { font-size: .62em; color: var(--muted); background: var(--bg-panel); border: 1px solid var(--border); padding: 2px 8px; border-radius: 8px; font-weight: 500; }
+.ann-post-btn {
+  background: rgba(139,92,246,.12); border: 1px solid rgba(139,92,246,.28);
+  color: #a78bfa; padding: 6px 14px; border-radius: 10px;
+  font-size: .74em; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background .2s;
+}
+.ann-post-btn:hover { background: rgba(139,92,246,.22); }
+.ann-list { display: flex; flex-direction: column; gap: 8px; }
+.ann-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 13px;
+  position: relative; overflow: hidden;
+  animation: fadeUp .25s ease;
+}
+.ann-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--violet); border-radius: 3px 0 0 3px;
+}
+.ann-item.tag-mess::before { background: var(--amber); }
+.ann-item.tag-event::before { background: var(--blue); }
+.ann-item.tag-academic::before { background: var(--green); }
+.ann-text { font-size: .85em; color: var(--text); line-height: 1.55; font-weight: 500; margin-bottom: 7px; }
+.ann-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.ann-tag { font-size: .63em; font-weight: 700; padding: 2px 8px; border-radius: 7px; text-transform: uppercase; letter-spacing: .5px; }
+.tag-general { background: rgba(139,92,246,.12); color: #a78bfa; }
+.tag-mess { background: rgba(245,158,11,.12); color: #fbbf24; }
+.tag-event { background: rgba(59,130,246,.12); color: #60a5fa; }
+.tag-academic { background: rgba(16,185,129,.12); color: #34d399; }
+.ann-time { font-size: .63em; color: var(--faint); }
+.ann-del-btn { margin-left: auto; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); color: #f87171; padding: 2px 7px; border-radius: 6px; font-size: .63em; cursor: pointer; font-weight: 700; }
+.ann-empty { text-align: center; color: var(--muted); font-size: .8em; padding: 16px; }
+
+/* ── MODAL ── */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 1000; align-items: flex-end; justify-content: center; }
+.modal.open { display: flex; }
+.mbox {
+  background: var(--bg-card); border-radius: 24px 24px 0 0;
+  padding: 22px 20px 40px; width: 100%; max-width: 540px;
+  max-height: 88vh; overflow-y: auto;
+  border: 1px solid var(--border); border-bottom: none;
+  animation: slideUp .28s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+.mh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.mh-title { font-size: 1.15em; font-weight: 800; color: var(--text); }
+.mx { background: var(--bg-panel); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: .9em; display: flex; align-items: center; justify-content: center; }
+.m-label { font-size: .72em; font-weight: 700; color: var(--muted); margin-bottom: 6px; margin-top: 14px; text-transform: uppercase; letter-spacing: 1px; }
+.m-input {
+  width: 100%; background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 11px 13px; color: var(--text);
+  font-size: .88em; font-family: inherit; outline: none;
+  transition: border-color .2s; resize: none;
+}
+.m-input:focus { border-color: var(--violet); }
+.m-input::placeholder { color: var(--faint); }
+.m-select {
+  width: 100%; background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 11px 13px; color: var(--text);
+  font-size: .88em; font-family: inherit; outline: none; appearance: none;
+}
+.m-btn-row { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.m-btn {
+  padding: 13px; border: none; border-radius: 12px;
+  font-size: .9em; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: opacity .15s; text-align: center;
+}
+.m-btn-green { background: #10b981; color: #fff; }
+.m-btn-amber { background: #f59e0b; color: #fff; }
+.m-btn-red   { background: #ef4444; color: #fff; }
+.m-btn-secondary { background: var(--bg-panel); border: 1px solid var(--border); color: var(--muted); }
+.m-btn:hover { opacity: .88; }
+.m-adm-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(239,68,68,.2); }
+.m-adm-label { font-size: .7em; color: #ef4444; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.m-adm-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.m-adm-btn {
+  flex: 1; min-width: 70px; padding: 8px; border-radius: 9px;
+  background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2);
+  color: #fca5a5; font-size: .78em; font-weight: 700;
+  cursor: pointer; font-family: inherit; text-align: center;
+}
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-raised); color: var(--text); border: 1px solid var(--border);
+  padding: 10px 20px; border-radius: 30px; font-size: .82em; font-weight: 700;
+  opacity: 0; transition: opacity .3s; z-index: 9999;
+  pointer-events: none; white-space: nowrap; box-shadow: var(--shadow);
+}
+
+/* ── ADMIN BAR ── */
+#admin-bar {
+  display: none; position: fixed; top: 10px; right: 10px;
+  background: rgba(239,68,68,.18); border: 1px solid rgba(239,68,68,.4);
+  color: #f87171; padding: 5px 13px; border-radius: 18px;
+  font-size: .7em; font-weight: 700; z-index: 600; cursor: pointer;
+}
+#admin-bar.show { display: block; }
+
+/* ── REFRESH BTN ── */
+.ref-btn {
+  position: fixed; bottom: 20px; right: 16px;
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+  color: #fff; border: none; border-radius: 28px; padding: 11px 18px;
+  font-size: .82em; font-weight: 800; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(99,102,241,.45);
+  z-index: 999; font-family: inherit; transition: transform .15s;
+}
+.ref-btn:hover { transform: scale(1.04); }
+
+/* ── CAMPUS UNO TILE ── */
+.cu-tile {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-radius: var(--r-lg);
+  background: linear-gradient(135deg,#1e1b4b,#1e3a8a,#0c4a6e);
+  border: 1px solid rgba(99,102,241,.4);
+  box-shadow: 0 6px 24px rgba(99,102,241,.2);
+  text-decoration: none; cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cu-tile:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(99,102,241,.35); }
+.cu-tile-left { display: flex; align-items: center; gap: 12px; }
+.cu-tile-icon { font-size: 1.8em; background: rgba(255,255,255,.1); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); }
+.cu-tile-name { font-size: 1em; font-weight: 800; color: #fff; letter-spacing: -.2px; }
+.cu-tile-sub { font-size: .75em; color: rgba(255,255,255,.5); margin-top: 2px; }
+.cu-tile-arrow { font-size: 1.3em; color: rgba(255,255,255,.6); }
+body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1); }
+
+/* ── FOOTER ── */
+.footer {
+  max-width: 640px; margin: 28px auto 0;
+  padding: 0 18px 10px;
+}
+.footer-div { height: 1px; background: linear-gradient(90deg,transparent,var(--border),transparent); margin-bottom: 18px; }
+.footer-inner { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.footer-brand { font-size: .95em; font-weight: 900; background: linear-gradient(120deg,#a78bfa,#60a5fa,#34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.footer-sub { font-size: .62em; color: var(--faint); }
+.footer-devs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.dev-chip { font-size: .72em; font-weight: 700; padding: 3px 11px; border-radius: 20px; background: rgba(139,92,246,.1); border: 1px solid rgba(139,92,246,.25); color: #a78bfa; }
+.footer-amp { font-size: .7em; color: var(--faint); }
+.footer-copy { font-size: .62em; color: var(--faint); }
+
+/* ── NIGHT ── */
+.night-banner {
+  display: none; border-radius: var(--r-lg);
+  padding: 20px; text-align: center; margin: 14px 0;
+  background: linear-gradient(135deg,rgba(15,10,40,.95),rgba(30,10,60,.95));
+  border: 1px solid rgba(139,92,246,.35);
+  box-shadow: 0 6px 28px rgba(99,0,255,.15);
+}
+.night-banner.show { display: block; }
+.night-emoji { font-size: 1.8em; margin-bottom: 6px; }
+.night-txt { font-size: 1.1em; font-weight: 800; background: linear-gradient(135deg,#a78bfa,#818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.night-sub { font-size: .74em; color: #6b5fa0; margin-top: 4px; }
+
+/* ── LAST UPDATED ── */
+.lu-bar { display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: .62em; color: var(--faint); margin-bottom: 6px; }
+.lu-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: cspulse 2s infinite; }
+
+/* Mobile */
+@media(max-width:380px) {
+  .wknd-card { flex-direction: column; align-items: flex-start; }
+  .wt-num { font-size: 1em; }
 }
-
-/* ═══ NIGHT BANNER ═══ */
-.night-banner{
-  display:none;
-  background:linear-gradient(135deg,rgba(15,10,40,0.95),rgba(30,10,60,0.95));
-  border:1px solid rgba(139,92,246,0.4);
-  border-radius:var(--radius-lg);
-  padding:22px 20px;
-  margin:10px 0 16px;
-  text-align:center;
-  box-shadow:0 8px 32px rgba(99,0,255,0.2);
-}
-.night-banner.show{display:block;}
-.night-banner-emoji{font-size:2em;margin-bottom:8px;}
-.night-banner-text{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1.3em;font-weight:800;
-  background:linear-gradient(135deg,#a78bfa,#818cf8,#c4b5fd);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  letter-spacing:-0.3px;
-}
-.night-banner-sub{font-size:0.78em;color:#7c6fa0;margin-top:5px;font-weight:500;}
-
-/* ═══ NIGHT MASK (tiles after Campus Uno during night) ═══ */
-.night-mask-wrap{position:relative;}
-.night-overlay{
-  display:none;
-  position:absolute;inset:0;
-  background:rgba(11,11,24,0.88);
-  border-radius:var(--radius-lg);
-  z-index:50;
-  align-items:center;justify-content:center;
-  backdrop-filter:blur(3px);
-}
-.night-overlay.show{display:flex;}
-.night-overlay-txt{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.82em;font-weight:700;color:#6b5fa0;
-  text-align:center;letter-spacing:0.5px;
-}
-body.light-theme .night-overlay{background:rgba(200,200,240,0.88);}
-body.light-theme .night-overlay-txt{color:#9980c0;}
-
-/* ═══ SUGGEST TILE — open big card ═══ */
-.suggest-open-wrap{
-  background:var(--bg-card);
-  border:2px solid rgba(139,92,246,0.35);
-  border-radius:var(--radius-lg);
-  padding:18px 18px 14px;
-  margin-bottom:10px;
-  box-shadow:0 6px 24px rgba(139,92,246,0.15);
-}
-.suggest-open-header{
-  display:flex;align-items:center;gap:10px;margin-bottom:12px;
-}
-.suggest-open-icon{font-size:1.4em;}
-.suggest-open-title{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1em;font-weight:800;color:var(--text-main);
-}
-.suggest-open-sub{font-size:0.72em;color:var(--text-muted);margin-top:2px;}
-.suggest-open-input{
-  width:100%;background:var(--bg-panel);border:1px solid var(--border-main);
-  border-radius:var(--radius-sm);padding:11px 12px;color:var(--text-main);
-  font-size:0.85em;font-family:'Inter',sans-serif;outline:none;
-  resize:none;transition:border-color 0.2s;min-height:80px;
-}
-.suggest-open-input:focus{border-color:var(--accent-violet);}
-.suggest-open-input::placeholder{color:var(--text-faint);}
-.suggest-open-btn{
-  background:linear-gradient(135deg,#7c3aed,#6366f1);color:white;border:none;
-  border-radius:var(--radius-sm);padding:10px 20px;font-weight:700;font-size:0.85em;
-  cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
-  margin-top:10px;width:100%;transition:opacity 0.2s;
-}
-.suggest-open-btn:hover{opacity:0.88;}
-.suggest-feed-inline{margin-top:12px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;}
-.sug-inline-card{
-  background:var(--bg-panel);border:1px solid var(--border-soft);
-  border-radius:var(--radius-sm);padding:9px 11px;
-  font-size:0.78em;color:var(--text-muted);line-height:1.4;
-}
-
-/* ═══ HEARTBEAT REDESIGN ═══ */
-.hb-chat-header{
-  display:flex;align-items:center;gap:10px;margin-bottom:12px;
-}
-.hb-chat-title{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1.05em;font-weight:800;color:#ff4d6d;
-  display:flex;align-items:center;gap:7px;
-}
-.hb-chat-desc{
-  font-size:0.85em;color:#ff8fa3;font-weight:600;
-  margin-bottom:12px;
-  line-height:1.5;
-  padding:10px 12px;
-  background:rgba(255,77,109,0.08);
-  border-radius:var(--radius-sm);
-  border-left:3px solid #ff4d6d;
-}
-/* Chat bubble feed */
-.hb-feed{
-  display:flex;flex-direction:column;gap:6px;
-  margin-top:10px;max-height:320px;overflow-y:auto;
-  scroll-behavior:smooth;
-}
-.hb-bubble{
-  display:flex;align-items:flex-end;gap:8px;
-  animation:bubbleIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes bubbleIn{from{opacity:0;transform:translateY(10px) scale(0.95);}to{opacity:1;transform:none;}}
-.hb-avatar{
-  width:28px;height:28px;border-radius:50%;
-  background:linear-gradient(135deg,#ff4d6d,#ff758c);
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.75em;font-weight:800;color:white;
-  flex-shrink:0;
-}
-.hb-bubble-body{
-  background:#1a0a10;
-  border:1px solid rgba(255,77,109,0.25);
-  border-radius:16px 16px 16px 4px;
-  padding:9px 13px;
-  max-width:85%;
-  position:relative;
-}
-.hb-bubble-text{
-  font-size:0.92em;font-weight:600;color:#ffe4e8;
-  line-height:1.4;word-break:break-word;
-}
-.hb-bubble-meta{
-  font-size:0.58em;color:#7f3040;margin-top:3px;
-  display:flex;align-items:center;gap:5px;
-}
-.hb-fade-bar{
-  height:2px;background:rgba(255,77,109,0.15);
-  border-radius:2px;margin-top:5px;overflow:hidden;
-}
-.hb-fade-fill{height:100%;background:#ff4d6d;border-radius:2px;transition:width 1s linear;}
-/* Typing indicators strip */
-.hb-typing-strip{
-  display:flex;align-items:center;gap:8px;
-  padding:6px 4px 2px;min-height:24px;
-  font-size:0.68em;color:#7f3040;font-weight:500;
-}
-.hb-typing-dots span{
-  display:inline-block;width:5px;height:5px;
-  border-radius:50%;background:#ff4d6d;
-  animation:dotBounce 1.2s infinite;margin:0 1px;
-  opacity:0.7;
-}
-.hb-typing-dots span:nth-child(2){animation-delay:0.2s;}
-.hb-typing-dots span:nth-child(3){animation-delay:0.4s;}
-@keyframes dotBounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-5px);}}
-
-/* ═══ LAST UPDATED ═══ */
-.last-updated-bar{
-  display:flex;align-items:center;justify-content:flex-end;gap:5px;
-  font-size:0.62em;color:var(--text-faint);
-  margin-bottom:6px;font-weight:500;
-}
-.last-updated-dot{
-  width:5px;height:5px;border-radius:50%;
-  background:#10b981;animation:pulse 2s infinite;
-}
-
-@keyframes huntBanner{
-  from{opacity:0;transform:translateY(-20px);}
-  to{opacity:1;transform:translateY(0);}
-}
-
-/* ═══ HUNT ALERT BAR ═══ */
-#hunt-alert-bar{
-  margin:10px 0 0;
-  border-radius:var(--radius-md);
-  overflow:hidden;
-  animation:huntPulse 2s ease-in-out infinite;
-}
-@keyframes huntPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0);}
-  50%{box-shadow:0 0 18px 4px rgba(251,191,36,0.35);}
-}
-.hunt-alert-inner{
-  background:linear-gradient(135deg,#451a03,#78350f,#451a03);
-  border:1px solid rgba(251,191,36,0.5);
-  padding:11px 16px;
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-}
-.hunt-alert-dot{
-  width:10px;height:10px;border-radius:50%;
-  background:#fbbf24;flex-shrink:0;
-  animation:pulse 1s infinite;
-}
-.hunt-alert-text{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.82em;font-weight:800;
-  color:#fde68a;flex:1;letter-spacing:0.2px;
-}
-.hunt-alert-count{
-  font-size:0.7em;font-weight:700;
-  background:rgba(251,191,36,0.2);
-  border:1px solid rgba(251,191,36,0.4);
-  color:#fbbf24;padding:2px 9px;border-radius:20px;
-}
-
-/* ═══ FHUNT active glow ═══ */
-.fhunt-wrap.hunt-active{
-  border-color:rgba(251,191,36,0.5);
-  box-shadow:0 0 24px rgba(251,191,36,0.2),var(--shadow-card);
-}
-.fhunt-wrap.hunt-active::before{
-  background:linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b);
-  animation:shimmer 2s infinite;
-}
-.fhunt-wrap.hunt-active .fhunt-title{
-  color:#fbbf24;
-}
-
-/* ═══ FACULTY HUNT ═══ */
-.fhunt-wrap{
-  margin:14px 0;
-  border:1px solid rgba(139,92,246,0.3);
-  border-radius:var(--radius-lg);
-  background:var(--bg-card);
-  box-shadow:var(--shadow-card);
-  overflow:hidden;
-  position:relative;
-}
-.fhunt-wrap::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,#8b5cf6,#6366f1,#3b82f6);
-}
-.fhunt-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px 10px;flex-wrap:wrap;gap:8px;
-}
-.fhunt-title{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.95em;font-weight:800;color:var(--text-main);
-  display:flex;align-items:center;gap:8px;
-}
-.fhunt-sub{font-size:0.65em;color:var(--text-muted);font-weight:400;margin-top:1px;}
-.fhunt-post-btn{
-  background:linear-gradient(135deg,#7c3aed,#6366f1);
-  color:white;border:none;border-radius:10px;
-  padding:8px 16px;font-size:0.78em;font-weight:700;
-  cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
-  transition:opacity 0.2s;white-space:nowrap;
-}
-.fhunt-post-btn:hover{opacity:0.88;}
-.fhunt-list{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px;}
-.fhunt-empty{
-  text-align:center;color:var(--text-faint);font-size:0.8em;
-  padding:18px;border:1px dashed var(--border-main);
-  border-radius:var(--radius-sm);margin:0 0 4px;
-}
-.fhunt-card{
-  background:var(--bg-panel);
-  border:1px solid var(--border-soft);
-  border-radius:var(--radius-sm);
-  padding:12px 14px;
-  position:relative;overflow:hidden;
-  animation:fu .3s ease;
-}
-.fhunt-card::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,#8b5cf6,#6366f1);
-  border-radius:3px 0 0 3px;
-}
-.fhunt-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
-.fhunt-who{
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:0.9em;font-weight:800;color:var(--text-main);
-}
-.fhunt-note{font-size:0.78em;color:var(--text-muted);font-style:italic;margin-top:2px;line-height:1.35;}
-.fhunt-meta{font-size:0.62em;color:var(--text-faint);margin-top:1px;}
-.fhunt-timer{
-  font-size:0.6em;font-weight:700;color:#8b5cf6;
-  background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);
-  padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;
-}
-.fhunt-responses{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px;}
-.fhunt-resp-chip{
-  font-size:0.72em;font-weight:600;padding:4px 10px;border-radius:20px;
-  background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);color:#a5b4fc;
-}
-.fhunt-resp-chip.spotted{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.25);color:#34d399;}
-.fhunt-resp-chip.cabin{background:rgba(20,184,166,0.12);border-color:rgba(20,184,166,0.25);color:#5eead4;}
-.fhunt-resp-chip.inclass{background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.25);color:#93c5fd;}
-.fhunt-resp-chip.notseen{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2);color:#f87171;}
-.fhunt-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
-.fhunt-act-btn{
-  font-size:0.74em;font-weight:700;padding:5px 11px;border-radius:8px;
-  border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
-  transition:opacity 0.15s;flex:1;min-width:70px;text-align:center;
-}
-.fhunt-act-btn:active{opacity:0.75;}
-.fha-spotted{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
-.fha-cabin{background:rgba(20,184,166,0.15);color:#5eead4;border:1px solid rgba(20,184,166,0.3);}
-.fha-class{background:rgba(59,130,246,0.15);color:#93c5fd;border:1px solid rgba(59,130,246,0.3);}
-.fha-notseen{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
-.fhunt-spotted-wrap{margin-top:8px;padding:8px 10px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;}
-.fhunt-spotted-input{
-  width:100%;background:transparent;border:none;border-bottom:1px solid rgba(16,185,129,0.3);
-  padding:4px 0;color:var(--text-main);font-size:0.82em;
-  font-family:'Inter',sans-serif;outline:none;
-}
-.fhunt-spotted-input::placeholder{color:var(--text-faint);}
-.fhunt-spotted-send{
-  margin-top:6px;background:#10b981;color:white;border:none;
-  border-radius:8px;padding:6px 14px;font-size:0.76em;font-weight:700;
-  cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
-}
-
-/* ═══ JS PAINTS CARD COLORS ═══ */
 </style>
 </head>
-<body class="light-theme">
-<script>
-// Apply saved theme immediately before paint to prevent flash
-if(localStorage.getItem("theme")==="dark") document.body.classList.remove("light-theme");
-</script>
+<body>
 <div id="toast"></div>
 <div id="admin-bar" onclick="adminLogout()">🔐 Admin · tap to exit</div>
 
-<div class="container">
-  <div class="header-top">
-    <button id="theme-toggle">🌙 Dark</button>
+<!-- TOPBAR -->
+<div class="topbar">
+  <span class="brand">FundBASEU</span>
+  <div class="topbar-right">
+    <button class="pill-btn" id="theme-btn">🌙 Dark</button>
   </div>
+</div>
 
-  <header>
-    <h1>FundBASEU Tracker</h1>
-    <p>Real-time campus status · by students, for students</p>
-    <div class="header-links">
-      <a href="https://sway.cloud.microsoft/CuEoSACHmG0wvSfR?ref=Link&loc=play" target="_blank" class="upd-link">📢 FundBASEU Updates →</a>
-    </div>
-  </header>
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-sub">Real-time campus status · by students, for students</div>
+  <a href="https://sway.cloud.microsoft/CuEoSACHmG0wvSfR?ref=Link&loc=play" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,92,246,.1);padding:5px 14px;border-radius:12px;color:#a78bfa;text-decoration:none;font-size:.72em;font-weight:700;border:1px solid rgba(139,92,246,.2);">📢 FundBASEU Updates →</a>
+</div>
 
-  <div class="notif-banner" id="notif-banner">
-    <div style="flex:1;">🔔 Get meal reminders at 7:30am · 12:30pm · 5pm · 7:30pm
-    <div id="notif-st" style="font-size:0.72em;color:#818cf8;margin-top:3px;"></div></div>
-    <button class="notif-btn" id="notif-btn" onclick="reqNotif()">Enable</button>
-  </div>
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-chip"><span class="stat-n" id="liveCount">0</span><span class="stat-l">👥 Live Now</span></div>
+  <div class="stat-chip"><span class="stat-n" id="totalVis">0</span><span class="stat-l">📊 Visitors</span></div>
+</div>
+
+<!-- WEEKEND COUNTDOWN -->
+<div id="wknd-banner"></div>
+
+<!-- MAIN WRAP -->
+<div class="wrap">
 
   <!-- NIGHT BANNER -->
   <div class="night-banner" id="night-banner">
-    <div class="night-banner-emoji">🌙✨</div>
-    <div class="night-banner-text">BASEU Never Sleeps</div>
-    <div class="night-banner-sub">It's late — but you're not alone</div>
+    <div class="night-emoji">🌙✨</div>
+    <div class="night-txt">BASEU Never Sleeps</div>
+    <div class="night-sub">It's late — but you're not alone</div>
   </div>
 
-  <!-- CAMPUS UNO TILE — above announcements -->
-  <a href="https://campus.uno/" target="_blank" rel="noopener noreferrer" class="campus-uno-tile">
-    <div class="cu-tile-left">
-      <span class="cu-tile-icon">🎓</span>
-      <div>
-        <div class="cu-tile-title">Campus Uno</div>
-        <div class="cu-tile-sub">Your all-in-one campus platform</div>
+  <!-- CAMPUS UNO -->
+  <div style="margin: 16px 0;">
+    <a href="https://campus.uno/" target="_blank" rel="noopener" class="cu-tile">
+      <div class="cu-tile-left">
+        <span class="cu-tile-icon">🎓</span>
+        <div><div class="cu-tile-name">Campus Uno</div><div class="cu-tile-sub">Your all-in-one campus platform</div></div>
+      </div>
+      <span class="cu-tile-arrow">→</span>
+    </a>
+  </div>
+
+  <!-- ANNOUNCEMENTS -->
+  <div class="ann-card">
+    <div class="ann-inner">
+      <div class="ann-header">
+        <div class="ann-title-row">📢 Announcements <span class="ann-exp-badge">12hr expiry</span></div>
+        <button class="ann-post-btn" onclick="openAnnModal()">+ Post</button>
+      </div>
+      <div id="ann-list"><div class="ann-empty">No announcements yet</div></div>
+    </div>
+  </div>
+
+  <!-- NEXT MEAL -->
+  <div class="sec-head"><div class="sec-title">Next Meal</div></div>
+  <div class="meal-block" id="meal-block">
+    <div class="meal-stripe"></div>
+    <div class="meal-inner">
+      <div class="meal-top">
+        <div>
+          <div class="meal-name-row">
+            <span class="meal-emoji" id="meal-emoji">🍴</span>
+            <span class="meal-name" id="meal-name">—</span>
+          </div>
+          <div class="meal-day" id="meal-day"></div>
+        </div>
+        <!-- Avg rating always visible top-right -->
+        <div class="meal-avg" id="meal-avg-display">
+          <span class="meal-avg-num" id="avg-num">—</span>
+          <span class="meal-avg-stars" id="avg-stars"></span>
+          <span class="meal-avg-count" id="avg-count"></span>
+        </div>
+      </div>
+
+      <!-- Menu chips — ALWAYS shown -->
+      <div class="meal-chips" id="meal-chips"></div>
+
+      <!-- MEAL RATING — inline below menu -->
+      <div class="meal-rating-section">
+        <div class="meal-rating-header">
+          <span class="mrl">Rate this meal</span>
+        </div>
+        <div id="star-row" class="star-row">
+          <button class="star-btn" onclick="setRating(1)" data-v="1">⭐</button>
+          <button class="star-btn" onclick="setRating(2)" data-v="2">⭐</button>
+          <button class="star-btn" onclick="setRating(3)" data-v="3">⭐</button>
+          <button class="star-btn" onclick="setRating(4)" data-v="4">⭐</button>
+          <button class="star-btn" onclick="setRating(5)" data-v="5">⭐</button>
+        </div>
+        <div id="meal-rated-msg" style="display:none;" class="meal-rated-msg">✅ Rated! Thanks.</div>
+        <div class="bar-chart" id="rating-bars"></div>
       </div>
     </div>
-    <span class="cu-tile-arrow">→</span>
-  </a>
-
-  <!-- ANNOUNCEMENTS (top) — distinctive card -->
-  <div class="ann-wrap">
-   <div class="ann-wrap-inner">
-    <div class="ann-wrap-header">
-      <div class="ann-title">📢 Announcements <span class="ann-title-badge">12hr expiry</span></div>
-      <button class="ann-post-btn" onclick="openAnnPost()">+ Post</button>
-    </div>
-    <div id="ann-list"><div class="ann-empty">No announcements yet</div></div>
-   </div>
   </div>
 
-  <!-- NEXT MEAL BANNER -->
-  <div class="meal-banner" id="meal-banner">
-    <div class="meal-banner-accent"></div>
-    <div class="meal-banner-inner">
-      <span class="meal-label" id="meal-label-top">Next Meal</span>
-      <div class="meal-time-row">
-        <span class="meal-name" id="meal-name-top">—</span>
-        <span class="meal-dot"></span>
-        <span class="meal-day" id="meal-day-top"></span>
+  <!-- CAMPUS STATUS -->
+  <div class="sec-head">
+    <div class="sec-title">Campus Status</div>
+    <div class="lu-bar"><div class="lu-dot"></div><span>Updated <span id="last-upd">—</span></span></div>
+  </div>
+
+  <div class="status-grid">
+    <div class="s-card" id="mess-card" onclick="openStatusModal('mess')">
+      <span class="s-card-icon">🍽️</span>
+      <span class="s-card-name">Mess</span>
+      <span class="s-card-badge bdg-gray" id="mess-avail">Not Updated</span>
+      <div class="s-card-cv" id="mess-cv"></div>
+      <div class="s-card-ts" id="mess-ts"></div>
+    </div>
+    <div class="s-card" id="nandini-card" onclick="openStatusModal('nandini')">
+      <span class="s-card-icon">🥛</span>
+      <span class="s-card-name">Nandini</span>
+      <span class="s-card-badge bdg-gray" id="nandini-avail">Not Updated</span>
+      <div class="s-card-cv" id="nandini-cv"></div>
+      <div class="s-card-ts" id="nandini-ts"></div>
+    </div>
+    <div class="s-card" id="nescafe-card" onclick="openStatusModal('nescafe')">
+      <span class="s-card-icon">☕</span>
+      <span class="s-card-name">Nescafé</span>
+      <span class="s-card-badge bdg-gray" id="nescafe-avail">Not Updated</span>
+      <div class="s-card-cv" id="nescafe-cv"></div>
+      <div class="s-card-ts" id="nescafe-ts"></div>
+    </div>
+    <div class="s-card" id="gym-card" onclick="openStatusModal('gym')">
+      <span class="s-card-icon">🏋️</span>
+      <span class="s-card-name">Gym</span>
+      <span class="s-card-badge bdg-gray" id="gym-avail">Not Updated</span>
+      <div class="s-card-cv" id="gym-cv"></div>
+      <div class="s-card-ts" id="gym-ts"></div>
+    </div>
+    <div class="s-card" id="bad-card" onclick="openStatusModal('bad')">
+      <span class="s-card-icon">🏸</span>
+      <span class="s-card-name">Badminton</span>
+      <span class="s-card-badge bdg-gray" id="bad-avail">Not Updated</span>
+      <div class="s-card-cv" id="bad-cv"></div>
+      <div class="s-card-ts" id="bad-ts"></div>
+    </div>
+    <div class="s-card" id="doc-card" onclick="openStatusModal('doc')">
+      <span class="s-card-icon">🏥</span>
+      <span class="s-card-name">Doctor</span>
+      <span class="s-card-badge bdg-gray" id="doc-avail">Not Updated</span>
+      <div class="s-card-cv" id="doc-cv"></div>
+      <div class="s-card-ts" id="doc-ts"></div>
+    </div>
+  </div>
+
+  <!-- CLASS SIGNAL SYSTEM -->
+  <div class="sec-head">
+    <div class="sec-title">🏫 Class Signal · Live</div>
+    <span style="font-size:.62em;color:var(--faint);">45min auto-reset</span>
+  </div>
+  <div style="font-size:.74em;color:var(--muted);margin-bottom:12px;line-height:1.5;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);">
+    💡 Tap your lecture hall to update status. 2 confirmations make it live.
+  </div>
+  <div class="class-signal-grid" id="class-grid"></div>
+
+  <!-- LOST & FOUND -->
+  <div class="sec-head"><div class="sec-title">🔎 Lost & Found</div></div>
+  <div class="lf-card">
+    <div class="lf-stripe"></div>
+    <div class="lf-inner">
+      <div class="lf-header">
+        <span class="lf-icon">🔎</span>
+        <div>
+          <div class="lf-title">Lost & Found</div>
+          <div class="lf-sub">Help reunite things with their owners</div>
+        </div>
       </div>
-      <div class="meal-menu-items" id="meal-menu-top"></div>
-    </div>
-  </div>
-
-  <div class="stats-bar">
-    <div class="s-box"><span class="s-num" id="liveCount">0</span><span class="s-lbl">👥 Live Now</span></div>
-    <div class="s-box"><span class="s-num" id="totalVis">0</span><span class="s-lbl">📊 Visitors</span></div>
-  </div>
-
-  <div class="last-updated-bar">
-    <div class="last-updated-dot"></div>
-    <span>Last updated: <span id="last-updated-time">—</span></span>
-  </div>
-
-  <div class="sec-lbl">Campus Status</div>
-
-  <div class="night-mask-wrap">
-  <div class="night-overlay" id="night-overlay"><div class="night-overlay-txt">🌙 Tracker sleeps too<br><span style="font-size:0.85em;opacity:0.7;">Check back after 6am</span></div></div>
-
-  <div class="grid">
-
-    <!-- MESS — small square -->
-    <div class="card" id="mess-card" onclick="openModal('mess')">
-      <div class="tile-head"><span class="tile-icon">🍽️</span></div>
-      <span class="tile-name">Mess</span>
-      <span class="sbdg s-gray" id="mess-avail">Not Updated</span>
-      <div class="cb cb-none" id="mess-cb">⬜ No votes yet</div>
-      <div class="vc" id="mess-vc"></div>
-      <div class="tc" id="mess-ts"></div>
-    </div>
-
-    <!-- NANDINI — small square -->
-    <div class="card" id="nandini-card" onclick="openModal('nandini')">
-      <div class="tile-head"><span class="tile-icon">🥛</span></div>
-      <span class="tile-name">Nandini</span>
-      <span class="sbdg s-gray" id="nandini-avail">Not Updated</span>
-      <div class="cb cb-none" id="nandini-cb">⬜ No votes yet</div>
-      <div class="vc" id="nandini-vc"></div>
-      <div class="tc" id="nandini-ts"></div>
-    </div>
-
-    <!-- NESCAFÉ — small square -->
-    <div class="card" id="nescafe-card" onclick="openModal('nescafe')">
-      <div class="tile-head"><span class="tile-icon">☕</span></div>
-      <span class="tile-name">Nescafé</span>
-      <span class="sbdg s-gray" id="nescafe-avail">Not Updated</span>
-      <div class="cb cb-none" id="nescafe-cb">⬜ No votes yet</div>
-      <div class="vc" id="nescafe-vc"></div>
-      <div class="tc" id="nescafe-ts"></div>
-    </div>
-
-    <!-- GYM — small square -->
-    <div class="card" id="gym-card" onclick="openModal('gym')">
-      <div class="tile-head"><span class="tile-icon">🏋️</span></div>
-      <span class="tile-name">Gym</span>
-      <span class="sbdg s-gray" id="gym-avail">Not Updated</span>
-      <div class="cb cb-none" id="gym-cb">⬜ No votes yet</div>
-      <div class="vc" id="gym-vc"></div>
-      <div class="tc" id="gym-ts"></div>
-    </div>
-
-    <!-- BADMINTON — small square -->
-    <div class="card" id="bad-card" onclick="openModal('bad')">
-      <div class="tile-head"><span class="tile-icon">🏸</span></div>
-      <span class="tile-name">Badminton</span>
-      <span class="sbdg s-gray" id="bad-avail">Not Updated</span>
-      <div class="cb cb-none" id="bad-cb">⬜ No votes yet</div>
-      <div class="vc" id="bad-vc"></div>
-      <div class="vc" id="bad-pend"></div>
-      <div class="tc" id="bad-ts"></div>
-    </div>
-
-    <!-- DOCTOR — small square -->
-    <div class="card" id="doc-card" onclick="openModal('doc')">
-      <div class="tile-head"><span class="tile-icon">🏥</span></div>
-      <span class="tile-name">Doctor</span>
-      <span class="sbdg s-gray" id="doc-avail">Not Updated</span>
-      <div class="cb cb-none" id="doc-cb">⬜ No votes yet</div>
-      <div class="vc" id="doc-vc"></div>
-      <div class="vc" id="doc-pend"></div>
-      <div class="tc" id="doc-ts"></div>
-    </div>
-
-  </div><!-- end grid -->
-  </div><!-- end night-mask-wrap -->
-
-  <!-- HUNT IS ON ALERT BAR -->
-  <div id="hunt-alert-bar" style="display:none;"></div>
-
-  <!-- FACULTY HUNT LIVE FEED -->
-  <div class="fhunt-wrap" id="fhunt-wrap">
-    <div class="fhunt-header">
-      <div>
-        <div class="fhunt-title">🎯 Admin · Faculty Hunt</div>
-        <div class="fhunt-sub">Live hunting board · requests auto-delete in 15 min</div>
+      <div class="lf-btns">
+        <button class="lf-btn lf-btn-lost" onclick="openLFModal('lost')">📢 I Lost Something</button>
+        <button class="lf-btn lf-btn-found" onclick="openLFModal('found')">📦 I Found Something</button>
       </div>
-      <button class="fhunt-post-btn" onclick="openFacultyHuntPost()">🎯 Start a Hunt</button>
-    </div>
-    <div id="hunt-helped-bar" style="display:none;padding:0 12px 8px;"></div>
-    <div class="fhunt-list" id="fhunt-list">
-      <div class="fhunt-empty">No active hunts · tap "Start a Hunt" to begin</div>
-    </div>
-  </div>
-
-  <!-- SUGGEST OPEN TILE — always visible, always open -->
-  <div class="suggest-open-wrap">
-    <div class="suggest-open-header">
-      <span class="suggest-open-icon">💡</span>
-      <div>
-        <div class="suggest-open-title">Suggestions & Ideas</div>
-        <div class="suggest-open-sub">Help make BASEU better — share anything</div>
+      <div class="lf-list" id="lf-list">
+        <div class="lf-empty">No active lost & found items</div>
       </div>
     </div>
-    <textarea class="suggest-open-input" id="sug-open-in" rows="3" placeholder="Ideas, bugs, complaints, requests..."></textarea>
-    <button class="suggest-open-btn" onclick="doSugOpen()">Submit Suggestion</button>
-    <div class="suggest-feed-inline" id="sug-feed-inline"></div>
-  </div>
-
-  <!-- IMMEDIATE UPDATES -->
-  <div class="imm-wrap" id="imm-wrap" style="display:none;">
-    <div class="imm-title">🔴 Immediate Updates <span style="font-size:0.6em;color:#78350f;font-weight:400;margin-left:4px;">5 downvotes = removed</span></div>
-    <div id="imm-list"></div>
-  </div>
-
-  <!-- HEARTBEAT ZONE -->
-  <div class="hb-wrap">
-    <div class="hb-chat-header">
-      <div class="hb-chat-title"><div class="pdot"></div>💬 Campus Chat</div>
-      <span style="font-size:0.68em;color:#7f3040;margin-left:auto;">anonymous · disappearing in 10s</span>
-    </div>
-    <!-- Greeting banner -->
-    <div id="hb-greeting" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1em;font-weight:800;text-align:center;padding:10px 8px 6px;letter-spacing:-0.2px;"></div>
-    <div class="hb-chat-desc">
-      😴 Bored? Chat your heart out here — anonymously.<br>
-      <span style="font-size:0.88em;opacity:0.8;">Messages disappear in 10 seconds. Say anything.</span>
-    </div>
-    <!-- Missed messages notice -->
-    <div id="hb-missed-bar" style="display:none;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:8px;padding:7px 12px;margin-bottom:8px;font-size:0.74em;color:#ff8fa3;font-weight:600;text-align:center;"></div>
-    <!-- Active chatters strip -->
-    <div class="hb-typing-strip" id="hb-typing-strip">
-      <div class="hb-typing-dots"><span></span><span></span><span></span></div>
-      <span id="hb-active-txt">campus chat is live</span>
-    </div>
-    <div class="hb-feed" id="hb-feed"><div class="hb-empty">No messages yet · be the first to chat</div></div>
-    <div class="hb-row" style="margin-top:10px;">
-      <input class="hb-in" id="hb-txt" maxlength="80" placeholder="What's on your mind right now..." oninput="updateCC()">
-      <button class="btn-hb" onclick="postHB()">Send</button>
-    </div>
-    <div class="chct" id="chct">0 / 80</div>
   </div>
 
   <!-- FOOTER -->
-  <footer class="site-footer">
-    <div class="footer-divider"></div>
+  <footer class="footer">
+    <div class="footer-div"></div>
     <div class="footer-inner">
-      <div class="footer-brand">
-        <span class="footer-logo-text">FundBASEU</span>
-        <span class="footer-tagline">Campus Intelligence Platform</span>
+      <div class="footer-brand">FundBASEU</div>
+      <div class="footer-sub">Campus Intelligence Platform</div>
+      <div class="footer-devs">
+        <span style="font-size:.7em;color:var(--muted);">Built by</span>
+        <span class="dev-chip">Vardhan</span>
+        <span class="footer-amp">&amp;</span>
+        <span class="dev-chip">Athul</span>
       </div>
-      <div class="footer-meta">
-        <div class="footer-devs">
-          <span class="footer-dev-label">Built by</span>
-          <span class="footer-dev-names">
-            <span class="dev-chip">Vardhan</span>
-            <span class="footer-amp">&amp;</span>
-            <span class="dev-chip">Athul</span>
-          </span>
-        </div>
-        <div class="footer-copy">© 2026 FundBASEU · All Rights Reserved</div>
-      </div>
+      <div class="footer-copy">© 2026 FundBASEU · All Rights Reserved</div>
     </div>
   </footer>
 
@@ -1340,49 +759,33 @@ if(localStorage.getItem("theme")==="dark") document.body.classList.remove("light
 
 <button class="ref-btn" onclick="location.reload()">🔄 Refresh</button>
 
+<!-- MODAL -->
 <div class="modal" id="modal" onclick="bgClose(event)">
   <div class="mbox" id="mbox"></div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════
 //  CONFIG
-// ═══════════════════════════════════════════════
-var ILOCK = "fundbaseu2024"; // ← change this
-//Voting thresholds
-var T_MESS=3, T_GYM=1, T_NESCAFE=2, T_NANDINI=2, T_BAD=2, T_DOC=1, T_PROF=1;
-// Time thresholds (ms)
-var HB_VOTES=5, HB_TTL=10000, IMM_DV=5, ANN_EXP=43200000;
+// ══════════════════════════════════════════
+var ILOCK = "fundbaseu2024";
+var T_MESS=2, T_GYM=2, T_NESCAFE=2, T_NANDINI=2, T_BAD=2, T_DOC=2;
+var CS_THRESH = 2, CS_TTL = 2700000; // 45 min
+var ANN_EXP = 43200000; // 12hr
+var LF_TTL  = 172800000; // 48hr
 
-// Faculty + Admin list
+// Lecture halls
+var ROOMS = ["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","LH9"];
+
+// Faculty / prof list for class signal
 var FACULTY = [
-  // Professors
-  "Dr. Bidur",
-  "Dr. Megha",
-  "Dr. Irfan",
-  "Dr. Shameer",
-  "Dr. Nageshwar",
-  "Dr. Ishfaq",
-  "Dr. Muzaffar",
-  "Dr. Kasturi",
-  "Dr. Moushmi",
-  "Dr. Sushmita",
-  "Dr. Asha",
-  "Dean",
-  // Admin & Staff
-  "Manjunath (Boys Hostel Warden)",
-  "Girls Hostel Warden",
-  "Ganesh",
-  "Chennaiah (Legend)",
-  "Librarian",
-  "Exams Dept",
-  "Registrar",
-  "VC"
+  "— Not sure / Any",
+  "Dr. Bidur","Dr. Megha","Dr. Irfan","Dr. Shameer",
+  "Dr. Nageshwar","Dr. Ishfaq","Dr. Muzaffar","Dr. Kasturi",
+  "Dr. Moushmi","Dr. Sushmita","Dr. Asha","Dean"
 ];
 
-// ═══════════════════════════════════════════════
-//  FIREBASE
-// ═══════════════════════════════════════════════
+// ── FIREBASE ──
 firebase.initializeApp({
   apiKey:"AIzaSyBeVAkgLuLzq6uYo6M5begEMi_jwi-nAoU",
   authDomain:"fundbaseu-tracker.firebaseapp.com",
@@ -1397,112 +800,84 @@ db.ref("presence").on("value",function(s){ setText("liveCount",s.numChildren());
 db.ref("totalVisitors").transaction(function(c){ return (c||0)+1; });
 db.ref("totalVisitors").on("value",function(s){ setText("totalVis",s.val()||0); });
 
-var devId = localStorage.getItem("did") || (function(){ var id="d_"+Math.random().toString(36).slice(2,11); localStorage.setItem("did",id); return id; })();
+var devId = localStorage.getItem("did") || (function(){
+  var id="d_"+Math.random().toString(36).slice(2,11);
+  localStorage.setItem("did",id); return id;
+})();
 
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════
 //  HELPERS
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════
 function ge(id){ return document.getElementById(id); }
 function setText(id,v){ var e=ge(id); if(e) e.textContent=v; }
 function ago(t){ if(!t) return ""; var m=Math.floor((Date.now()-t)/60000); if(m<1) return "just now"; if(m===1) return "1m ago"; if(m<60) return m+"m ago"; var h=Math.floor(m/60); if(h<24) return h+"hr ago"; return Math.floor(h/24)+"d ago"; }
-function ts(t){ if(!t) return ""; var d=new Date(t); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function toast(msg){ var t=ge("toast"); t.textContent=msg; t.style.opacity="1"; clearTimeout(t._x); t._x=setTimeout(function(){ t.style.opacity="0"; },2800); }
 
-// ═══════════════════════════════════════════════
-//  CARD COLOR — applied directly via style + border
-//  This bypasses ALL CSS specificity issues
-// ═══════════════════════════════════════════════
-var CARD_COLORS = {
-  green:  { bg:"linear-gradient(135deg,#052e16,#064e3b)", border:"#10b981", glow:"rgba(16,185,129,0.3)", lightBg:"rgba(16,185,129,0.08)", lightBorder:"#10b981" },
-  red:    { bg:"linear-gradient(135deg,#450a0a,#7f1d1d)", border:"#ef4444", glow:"rgba(239,68,68,0.3)",  lightBg:"rgba(239,68,68,0.07)",  lightBorder:"#ef4444" },
-  amber:  { bg:"linear-gradient(135deg,#451a03,#78350f)", border:"#f59e0b", glow:"rgba(245,158,11,0.3)", lightBg:"rgba(245,158,11,0.08)", lightBorder:"#f59e0b" },
-  teal:   { bg:"linear-gradient(135deg,#042f2e,#134e4a)", border:"#14b8a6", glow:"rgba(20,184,166,0.3)", lightBg:"rgba(20,184,166,0.08)", lightBorder:"#14b8a6" },
-  blue:   { bg:"linear-gradient(135deg,#0c1a4a,#1e3a8a)", border:"#3b82f6", glow:"rgba(59,130,246,0.3)", lightBg:"rgba(59,130,246,0.08)", lightBorder:"#3b82f6" },
-  purple: { bg:"linear-gradient(135deg,#1e1b4b,#312e81)", border:"#818cf8", glow:"rgba(129,140,248,0.3)",lightBg:"rgba(99,102,241,0.08)", lightBorder:"#6366f1" },
-  dark:   { bg:"",                                        border:"",         glow:"none",                lightBg:"",                      lightBorder:"" }
-};
-
-function paintCard(id, colorKey){
-  var card = ge(id);
-  if (!card) return;
-  var c = CARD_COLORS[colorKey] || CARD_COLORS.dark;
-  var isLight = document.body.classList.contains("light-theme");
-  if(colorKey === "dark" || !colorKey){
-    card.style.background = "";
-    card.style.borderColor = "";
-    card.style.boxShadow = "";
-    return;
-  }
-  if(isLight){
-    card.style.background = c.lightBg || "";
-    card.style.borderColor = c.lightBorder || "";
-    card.style.boxShadow = "0 2px 12px "+c.glow;
-  } else {
-    card.style.background = c.bg;
-    card.style.borderColor = c.border;
-    card.style.boxShadow = "0 4px 20px "+c.glow;
-  }
-}
-
-// ═══════════════════════════════════════════════
-//  COMMUNITY BADGE
-// ═══════════════════════════════════════════════
-function setCB(id, votes, done, thresh){
-  var e = ge(id+"-cb"); if(!e) return;
-  if(done){ e.className="cb cb-ok"; e.textContent="✅ Community Confirmed"; }
-  else if(votes>=1){ e.className="cb cb-wait"; e.textContent="⚠️ Awaiting ("+votes+"/"+(thresh||3)+")"; }
-  else{ e.className="cb cb-none"; e.textContent="⬜ No votes yet"; }
-}
-
-// ═══════════════════════════════════════════════
-//  ADMIN
-// ═══════════════════════════════════════════════
+// Admin
 var isAdmin = sessionStorage.getItem("adm")==="1";
 if(isAdmin) ge("admin-bar").classList.add("show");
-
 function checkAdmin(){
   if(isAdmin) return true;
   var pw=prompt("🔐 Admin password:");
-  if(pw===ILOCK){ isAdmin=true; sessionStorage.setItem("adm","1"); ge("admin-bar").classList.add("show"); toast("🔐 Admin access granted"); return true; }
+  if(pw===ILOCK){ isAdmin=true; sessionStorage.setItem("adm","1"); ge("admin-bar").classList.add("show"); toast("Admin access granted"); return true; }
   toast("❌ Wrong password"); return false;
 }
 function adminLogout(){ if(!confirm("Exit admin?")) return; isAdmin=false; sessionStorage.removeItem("adm"); ge("admin-bar").classList.remove("show"); toast("Logged out"); }
 
-// ═══════════════════════════════════════════════
-//  NOTIFICATIONS
-// ═══════════════════════════════════════════════
-var nOn=false, lnk="";
-function initNotif(){
-  if(!("Notification" in window)) return;
-  if(Notification.permission==="granted"){ ge("notif-banner").style.display="none"; startNotif(); }
-  else if(Notification.permission==="default") ge("notif-banner").classList.add("show");
-}
-function reqNotif(){
-  ge("notif-btn").textContent="...";
-  Notification.requestPermission().then(function(p){
-    if(p==="granted"){ ge("notif-banner").classList.remove("show"); startNotif(); toast("🔔 Meal reminders on!"); }
-    else{ ge("notif-st").textContent="Denied — enable in browser settings"; ge("notif-btn").textContent="Enable"; }
-  });
-}
-function startNotif(){ if(nOn) return; nOn=true; chkMeal(); setInterval(chkMeal,60000); }
-function chkMeal(){
-  if(Notification.permission!=="granted") return;
-  var n=new Date(),h=n.getHours(),m=n.getMinutes(),k=h+":"+m;
-  if(k===lnk) return;
-  [{h:7,m:30,t:"🍳 Breakfast is served!",b:"Head to mess!"},{h:12,m:30,t:"🍽️ Lunch time!",b:"Mess open for Lunch!"},{h:17,m:0,t:"☕ Snacks time!",b:"Snacks at mess!"},{h:19,m:30,t:"🌙 Dinner ready!",b:"Dinner served at mess!"}]
-  .forEach(function(x){ if(h===x.h&&m===x.m){ new Notification(x.t,{body:x.b}); lnk=k; } });
-}
+// Modal
+function closeModal(){ ge("modal").classList.remove("open"); }
+function bgClose(e){ if(e.target===ge("modal")) closeModal(); }
+function openModal(html){ ge("mbox").innerHTML=html; ge("modal").classList.add("open"); }
 
-// ═══════════════════════════════════════════════
-//  TICKER (removed) — activity log still kept for internal use
-// ═══════════════════════════════════════════════
-db.ref("actLog").orderByChild("ts").limitToLast(20).on("value",function(snap){ /* kept for logAct */ });
-function logAct(msg){ db.ref("actLog").push({msg:msg,ts:Date.now()}); }
+// ══════════════════════════════════════════
+//  WEEKEND COUNTDOWN
+// ══════════════════════════════════════════
+function renderCountdown(){
+  var now = new Date();
+  var day = now.getDay(); // 0=Sun, 6=Sat
+  var isWeekend = day===0 || day===6;
+  var el = ge("wknd-banner");
 
-// ═══════════════════════════════════════════════
-//  MESS MENU
-// ═══════════════════════════════════════════════
+  if(isWeekend){
+    el.innerHTML = '<div class="wknd-card"><div class="wknd-left"><div class="wknd-label">Status</div><div class="wknd-msg">🎉 It\'s the Weekend!</div><div class="wknd-sub">Relax, recharge, restart</div></div><div class="wknd-today" style="font-size:2.5em;">🎊</div></div>';
+    return;
+  }
+
+  // Target: Friday 6pm (or Saturday if past)
+  var target = new Date(now);
+  var daysUntilFri = (5 - day + 7) % 7;
+  if(daysUntilFri === 0 && now.getHours() >= 18) daysUntilFri = 7;
+  target.setDate(now.getDate() + daysUntilFri);
+  target.setHours(18, 0, 0, 0);
+
+  var diff = target - now;
+  var days  = Math.floor(diff / 86400000);
+  var hours = Math.floor((diff % 86400000) / 3600000);
+  var mins  = Math.floor((diff % 3600000) / 60000);
+
+  var msgs = ["Weekend incoming ⚡","Almost there... 🏁","Midweek grind 💪","You got this 🔥","Just getting started 📚"];
+  var msg = msgs[Math.min(days, msgs.length-1)];
+
+  el.innerHTML =
+    '<div class="wknd-card">' +
+      '<div class="wknd-left">' +
+        '<div class="wknd-label">⏳ Weekend in</div>' +
+        '<div class="wknd-msg">' + msg + '</div>' +
+        '<div class="wknd-sub">Friday 6pm · ' + ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][now.getDay()] + ', ' + now.toLocaleDateString("en-IN",{day:"numeric",month:"short"}) + '</div>' +
+      '</div>' +
+      '<div class="wknd-timer">' +
+        '<div class="wt-blk"><span class="wt-num">' + String(days).padStart(2,"0") + '</span><span class="wt-lbl">Days</span></div>' +
+        '<div class="wt-blk"><span class="wt-num">' + String(hours).padStart(2,"0") + '</span><span class="wt-lbl">Hrs</span></div>' +
+        '<div class="wt-blk"><span class="wt-num">' + String(mins).padStart(2,"0") + '</span><span class="wt-lbl">Min</span></div>' +
+      '</div>' +
+    '</div>';
+}
+renderCountdown(); setInterval(renderCountdown, 30000);
+
+// ══════════════════════════════════════════
+//  MESS MENU DATA
+// ══════════════════════════════════════════
 var bf13={Monday:"Vada+Sambar+Chutney+Shavige",Tuesday:"Poha+Fruits+Chowchow Bath+Chutney",Wednesday:"Plain Dosa+Aloo+Chutney+Egg",Thursday:"Bisi Belle Bath+Bread Jam+Fruits",Friday:"Green Moong Dosa+Oats+Chutney",Saturday:"Tomato Bath+Puliyogare+Chutney",Sunday:"Masala Dosa+Aloo+Chutney"};
 var bf24={Monday:"Millets Khichdi+Vada+Sambar+Idly",Tuesday:"Lemon Rice+Bread Jam+Fruits",Wednesday:"Ragi Dosa+Dalia+Tomato Chutney+Egg",Thursday:"Onion Uthappam+Mangalore Bajji+Chutney",Friday:"Dal Khichdi+Dosa+Chutney",Saturday:"Pongal+Bread Jam+Fruits",Sunday:"Set Dosa+Chutney"};
 var dm={Monday:{L:"Poori/Ragi Ball+Rice+Drumstick+Channa+Curd",S:"Cutlet+Tea",D:"Dal Makhni+Rice+Dal+Veg"},Tuesday:{L:"Methi Chapathi+Rice+Dal+Veg Pulav+Curd",S:"Kabuli Husli+Tea",D:"Soyabean+Radish Sambhar+Chapati"},Wednesday:{L:"Chapathi/Ragi+Rice+Paneer+Sprouts Sambhar",S:"Samosa+Tea",D:"Chapathi+Rice+Aloo+Rasam"},Thursday:{L:"Paratha+Rajma+Jeera Rice+Pudina Rice+Curd",S:"Vada Pav+Tea",D:"Chapathi+Egg Curry+Dal Palak+Salad"},Friday:{L:"Palak Chapati+Bhindi+Chicken Biryani+Curd",S:"Bhel Puri+Tea",D:"Chapathi+Rice+Dal+Veg"},Saturday:{L:"Chapathi+Rice+Dal+Mix Veg Beans+Curd",S:"Masala Vada+Tea",D:"Chapathi+Dal+Veg+Salad"},Sunday:{L:"Mushroom/Paneer Biryani+Salad",S:"Pav Bhaji+Tea",D:"Chapathi+Beetroot Palya+Veg"}};
@@ -1510,73 +885,130 @@ var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"
 function wkPat(d){ var fd=new Date(d.getFullYear(),d.getMonth(),1),wk=Math.ceil((d.getDate()+fd.getDay())/7); return(wk===1||wk===3)?"w13":"w24"; }
 function nxMeal(){ var n=new Date(),h=n.getHours(),day=DAYS[n.getDay()]; if(h>=22){var t=new Date(n);t.setDate(t.getDate()+1);return{date:t,day:DAYS[t.getDay()],meal:"Breakfast"};} if(h>=18)return{date:n,day:day,meal:"Dinner"}; if(h>=15)return{date:n,day:day,meal:"Snacks"}; if(h>=10)return{date:n,day:day,meal:"Lunch"}; return{date:n,day:day,meal:"Breakfast"}; }
 function getMnu(date,day,meal){ if(meal==="Breakfast") return (wkPat(date)==="w13"?bf13:bf24)[day]||""; var k={Lunch:"L",Snacks:"S",Dinner:"D"}[meal]; return dm[day]?dm[day][k]||"":""; }
-function updMess(){ var n=nxMeal(); setText("mess-meal","Next: "+n.meal); setText("mess-menu",getMnu(n.date,n.day,n.meal)); }
-updMess(); setInterval(updMess,60000);
 
-// ═══════════════════════════════════════════════
-//  NEXT MEAL BANNER (top of page)
-// ═══════════════════════════════════════════════
 function updMealBanner(){
   var n=nxMeal();
-  var mealEmoji = {Breakfast:"🍳",Lunch:"🍽️",Snacks:"☕",Dinner:"🌙"};
-  setText("meal-label-top", (mealEmoji[n.meal]||"🍴") + "  Next Up");
-  setText("meal-name-top", n.meal);
-  setText("meal-day-top", n.day);
-  // Render menu items as chips
+  var emojiMap={Breakfast:"🍳",Lunch:"🍽️",Snacks:"☕",Dinner:"🌙"};
+  setText("meal-emoji", emojiMap[n.meal]||"🍴");
+  setText("meal-name", n.meal);
+  setText("meal-day", n.day);
+  // Always render menu chips
   var menu = getMnu(n.date,n.day,n.meal)||"";
-  var menuEl = document.getElementById("meal-menu-top");
-  if(menuEl){
-    if(menu){
-      var items = menu.split("+").map(function(s){ return s.trim(); }).filter(Boolean);
-      menuEl.innerHTML = items.map(function(i){ return '<span class="meal-item-chip">'+esc(i)+'</span>'; }).join('');
-    } else {
-      menuEl.innerHTML = '<span class="meal-item-chip">Menu not available</span>';
-    }
+  var chipsEl = ge("meal-chips");
+  if(chipsEl){
+    var items = menu ? menu.split("+").map(function(s){ return s.trim(); }).filter(Boolean) : ["Menu not available"];
+    chipsEl.innerHTML = items.map(function(i){ return '<span class="m-chip">'+esc(i)+'</span>'; }).join('');
+  }
+  // Only re-setup rating if the meal period changed
+  var newKey = getMealKey(n);
+  if(newKey !== currentMealKey){
+    // Detach old listener
+    if(currentMealKey) db.ref("mealRatings/"+currentMealKey+"/votes").off();
+    setupMealRating(n);
   }
 }
-updMealBanner(); setInterval(updMealBanner,60000);
+updMealBanner(); setInterval(updMealBanner, 30000);
 
-// ═══════════════════════════════════════════════
-//  VOTING ENGINE
-//  Uses atomic _voteCount so confirmed state is reliable
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════
+//  MEAL RATING SYSTEM
+// ══════════════════════════════════════════
+var currentMealKey = "";
+var selectedRating = 0;
+
+function getMealKey(mealInfo){
+  var d = mealInfo.date;
+  return "rating_" + d.getFullYear() + "_" + (d.getMonth()+1) + "_" + d.getDate() + "_" + mealInfo.meal;
+}
+
+function setRating(v){
+  selectedRating = v;
+  document.querySelectorAll(".star-btn").forEach(function(b, i){
+    b.classList.toggle("active", i < v);
+  });
+  clearTimeout(window._ratingTimer);
+  window._ratingTimer = setTimeout(function(){ submitRating(); }, 600);
+}
+
+function submitRating(){
+  if(!selectedRating || !currentMealKey) return;
+  var devKey = "mr_" + currentMealKey;
+  if(localStorage.getItem(devKey)){ toast("Already rated this meal!"); return; }
+  db.ref("mealRatings/" + currentMealKey + "/votes").push({v: selectedRating, ts: Date.now()});
+  localStorage.setItem(devKey, selectedRating);
+  ge("star-row").style.opacity = "0.4";
+  ge("star-row").style.pointerEvents = "none";
+  ge("meal-rated-msg").style.display = "block";
+  toast("⭐ Meal rated!");
+}
+
+function setupMealRating(mealInfo){
+  currentMealKey = getMealKey(mealInfo);
+  var devKey = "mr_" + currentMealKey;
+  var alreadyRated = !!localStorage.getItem(devKey);
+  selectedRating = 0;
+  // Reset stars display
+  var starRow = ge("star-row");
+  var ratedMsg = ge("meal-rated-msg");
+  if(starRow){
+    starRow.style.opacity = alreadyRated ? "0.4" : "1";
+    starRow.style.pointerEvents = alreadyRated ? "none" : "auto";
+    document.querySelectorAll(".star-btn").forEach(function(b){ b.classList.remove("active"); });
+  }
+  if(ratedMsg) ratedMsg.style.display = alreadyRated ? "block" : "none";
+  // Always show avg display (show dash if no votes)
+  var avgEl = ge("meal-avg-display");
+  if(avgEl) avgEl.style.display = "flex";
+  setText("avg-num", "—"); setText("avg-stars", ""); setText("avg-count", "");
+  // Live rating listener
+  db.ref("mealRatings/" + currentMealKey + "/votes").on("value", function(snap){
+    var counts=[0,0,0,0,0], total=0, sum=0;
+    snap.forEach(function(c){
+      var d=c.val(); if(d&&d.v>=1&&d.v<=5){ counts[d.v-1]++; sum+=d.v; total++; }
+    });
+    var avg = total>0 ? (sum/total).toFixed(1) : null;
+    if(avg){
+      setText("avg-num", avg);
+      var stars="", n=Math.round(parseFloat(avg));
+      for(var i=0;i<5;i++) stars+=(i<n)?"⭐":"☆";
+      setText("avg-stars", stars);
+      setText("avg-count", total+" vote"+(total!==1?"s":""));
+    } else {
+      setText("avg-num","—"); setText("avg-stars",""); setText("avg-count","");
+    }
+    // Render bars
+    var barsEl=ge("rating-bars");
+    if(barsEl&&total>0){
+      var max=Math.max.apply(null,counts);
+      barsEl.innerHTML=[5,4,3,2,1].map(function(star){
+        var ct=counts[star-1], pct=max>0?Math.round((ct/max)*100):0;
+        return '<div class="bar-row"><span class="bar-lbl">'+star+'</span><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div><span class="bar-ct">'+ct+'</span></div>';
+      }).join('');
+    } else if(barsEl){ barsEl.innerHTML=""; }
+  });
+}
+
+// ══════════════════════════════════════════
+//  VOTING ENGINE (simplified & stable)
+// ══════════════════════════════════════════
 var confirmed = {};
 
 function doVote(place, value, thresh){
   var dvRef = db.ref(place+"_dv/"+devId);
-  dvRef.once("value",function(snap){
-    if(snap.exists()) return toast("Already voted for "+place);
-    dvRef.set({v:value,ts:Date.now()});
-
-    db.ref(place+"_votedFor").once("value",function(vf){
-      var cur=vf.val();
-      if(cur && cur!==value){
-        dvRef.remove();
-        return toast("Vote in progress for: "+cur);
+  dvRef.once("value", function(snap){
+    if(snap.exists()) return toast("Already voted for " + place);
+    dvRef.set({v:value, ts:Date.now()});
+    db.ref(place+"_voteCount").transaction(function(c){ return (c||0)+1; }, function(err,ok,sn){
+      if(err||!ok||!sn){ dvRef.remove(); return toast("Error, try again"); }
+      var count = sn.val(), rem = thresh - count;
+      if(count >= thresh){
+        db.ref(place).set({status:value, ts:Date.now()}, function(){
+          db.ref(place+"_voteCount").remove();
+          db.ref(place+"_dv").remove();
+        });
+        toast("✅ Community confirmed!");
+      } else {
+        toast("Vote recorded! " + rem + " more needed.");
       }
-      if(!cur) db.ref(place+"_votedFor").set(value);
-
-      db.ref(place+"_voteCount").transaction(function(c){ return (c||0)+1; },function(err,ok,sn){
-        if(err||!ok||!sn){ dvRef.remove(); return toast("Error voting, try again"); }
-        var count=sn.val(), rem=thresh-count;
-        if(count>=thresh){
-          confirmed[place]=true;
-          var writeVal = value.trim(); // normalise before writing
-          console.log("WRITE:", place, writeVal);
-          db.ref(place).set({status:writeVal,ts:Date.now()},function(){
-            db.ref(place+"_voteCount").remove();
-            db.ref(place+"_votedFor").remove();
-            db.ref(place+"_dv").remove();
-            db.ref(place+"_pend").remove();
-          });
-          logAct("✅ "+thresh+"/"+thresh+" confirmed: "+place+" → "+writeVal);
-          toast("✅ Community confirmed!");
-        } else {
-          db.ref(place+"_pend").set("Awaiting "+rem+" more confirmation(s)");
-          logAct("🗳️ "+place+" vote "+count+"/"+thresh+": "+value);
-          toast("Vote recorded! "+rem+" more needed.");
-        }
-      });
     });
   });
   closeModal();
@@ -1584,12 +1016,9 @@ function doVote(place, value, thresh){
 
 function adminSet(place, value){
   if(!checkAdmin()) return;
-  db.ref(place).set({status:value,ts:Date.now()});
+  db.ref(place).set({status:value, ts:Date.now()});
   db.ref(place+"_voteCount").remove();
-  db.ref(place+"_votedFor").remove();
   db.ref(place+"_dv").remove();
-  db.ref(place+"_pend").remove();
-  logAct("🔐 Admin set: "+place+" → "+value);
   toast("✅ Override applied!"); closeModal();
 }
 
@@ -1597,476 +1026,385 @@ function resetPlace(place){
   if(!checkAdmin()) return;
   db.ref(place).remove();
   db.ref(place+"_voteCount").remove();
-  db.ref(place+"_votedFor").remove();
   db.ref(place+"_dv").remove();
-  db.ref(place+"_pend").remove();
-  logAct("🔄 Reset: "+place);
-  toast("🔄 Reset to Not Updated"); closeModal();
+  toast("🔄 Reset"); closeModal();
 }
 
-// ═══════════════════════════════════════════════
-//  STATUS LISTENERS
-// ═══════════════════════════════════════════════
 function listenPlace(place, thresh, onStatus){
-  db.ref(place).on("value",function(snap){
-    var d=snap.val();
-    if(!d||!d.status){
-      confirmed[place]=false;
-      // Clear stale device vote lock so user can vote in a new round
-      db.ref(place+"_dv/"+devId).once("value",function(dvSnap){
-        if(dvSnap.exists()) db.ref(place+"_dv/"+devId).remove();
-      });
-      setCB(place,0,false,thresh);
-      onStatus(null);
-      return;
-    }
-    confirmed[place]=true;
-    setCB(place,0,true,thresh);
+  db.ref(place).on("value", function(snap){
+    var d = snap.val();
+    if(!d||!d.status){ onStatus(null); return; }
     onStatus(d);
   });
-  db.ref(place+"_voteCount").on("value",function(snap){
-    var c=snap.val()||0;
-    var e=ge(place+"-vc"); if(e) e.textContent=c>0?"Votes: "+c:"";
-    if(!confirmed[place]) setCB(place,c,false,thresh);
+  db.ref(place+"_voteCount").on("value", function(snap){
+    var c = snap.val()||0;
+    var el = ge(place+"-cv"); if(el) el.textContent = c>0 ? "🗳 "+c+"/"+thresh+" votes" : "";
   });
-  db.ref(place+"_pend").on("value",function(snap){
-    var e=ge(place+"-pend"); if(e) e.textContent=(!confirmed[place]&&snap.val())?snap.val():"";
-  });
+}
+
+// Paint cards
+var CC = {
+  green:  {dark:"linear-gradient(135deg,#052e16,#064e3b)", dark_b:"#10b981", light_b:"#10b981", light_bg:"rgba(16,185,129,.08)"},
+  red:    {dark:"linear-gradient(135deg,#450a0a,#7f1d1d)", dark_b:"#ef4444", light_b:"#ef4444", light_bg:"rgba(239,68,68,.07)"},
+  amber:  {dark:"linear-gradient(135deg,#451a03,#78350f)", dark_b:"#f59e0b", light_b:"#f59e0b", light_bg:"rgba(245,158,11,.08)"},
+  dark:   null
+};
+function paintCard(id, ck){
+  var c=ge(id); if(!c) return;
+  var isLight=document.body.classList.contains("light");
+  if(!ck||ck==="dark"){ c.style.background=""; c.style.borderColor=""; c.style.boxShadow=""; return; }
+  var p=CC[ck]; if(!p) return;
+  if(isLight){ c.style.background=p.light_bg; c.style.borderColor=p.light_b; c.style.boxShadow="0 2px 12px rgba(0,0,0,.08)"; }
+  else { c.style.background=p.dark; c.style.borderColor=p.dark_b; c.style.boxShadow="0 4px 20px rgba(0,0,0,.4)"; }
+}
+function getColorFromBadgeText(txt){
+  var t=(txt||"").toLowerCase();
+  if(!t||t==="not updated") return "dark";
+  if(t.includes("closed")||t.includes("not available")||t.includes("cancelled")) return "red";
+  if(t.includes("crowded")||t.includes("awaiting")||t.includes("waiting")) return "amber";
+  if(t.includes("open")||t.includes("available")||t.includes("ongoing")||t.includes("on campus")) return "green";
+  return "dark";
+}
+
+function renderStatusCard(place, text, timestamp, thresh){
+  var s=ge(place+"-avail"), tEl=ge(place+"-ts");
+  if(s){ s.textContent=text; s.className="s-card-badge"; }
+  var ck=getColorFromBadgeText(text);
+  if(ck==="green"&&s) s.classList.add("bdg-green");
+  else if(ck==="red"&&s) s.classList.add("bdg-red");
+  else if(ck==="amber"&&s) s.classList.add("bdg-amber");
+  else if(s) s.classList.add("bdg-gray");
+  if(tEl) tEl.textContent=timestamp?ago(timestamp):"";
+  paintCard(place+"-card", ck);
 }
 
 // MESS
 listenPlace("mess",T_MESS,function(d){
-  var s=ge("mess-avail"),tEl=ge("mess-ts");
-  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  var status=(d.status||"").trim().toLowerCase();
-  console.log("READ: mess →", JSON.stringify(d.status), "→ normalised:", status);
-  if(status==="food available"){ s.className="sbdg s-green"; s.textContent="✅ Food Available"; }
-  else if(status==="not available"||status==="food not available"){ s.className="sbdg s-red"; s.textContent="❌ Not Available"; }
-  else { console.warn("mess unknown status:", d.status); s.className="sbdg s-gray"; s.textContent="⚠ Unknown: "+d.status; }
-  if(tEl) tEl.textContent=ago(d.ts);
+  if(!d){ renderStatusCard("mess","Not Updated",null,T_MESS); return; }
+  var st=(d.status||"").trim().toLowerCase();
+  if(st==="food available") renderStatusCard("mess","✅ Food Available",d.ts,T_MESS);
+  else if(st==="not available"||st==="food not available") renderStatusCard("mess","❌ Not Available",d.ts,T_MESS);
+  else renderStatusCard("mess",d.status,d.ts,T_MESS);
 });
-
 // NANDINI
 listenPlace("nandini",T_NANDINI,function(d){
-  var s=ge("nandini-avail"),tEl=ge("nandini-ts");
-  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  var status=(d.status||"").trim().toLowerCase();
-  console.log("READ: nandini →", JSON.stringify(d.status), "→ normalised:", status);
-  if(status==="open"){ s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else if(status==="closed"){ s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
-  else { console.warn("nandini unknown status:", d.status); s.className="sbdg s-gray"; s.textContent="⚠ Unknown: "+d.status; }
-  if(tEl) tEl.textContent=ago(d.ts);
+  if(!d){ renderStatusCard("nandini","Not Updated",null,T_NANDINI); return; }
+  var st=(d.status||"").trim().toLowerCase();
+  if(st==="open") renderStatusCard("nandini","✅ Open",d.ts,T_NANDINI);
+  else if(st==="closed") renderStatusCard("nandini","🔒 Closed",d.ts,T_NANDINI);
+  else renderStatusCard("nandini",d.status,d.ts,T_NANDINI);
 });
-
 // NESCAFE
 listenPlace("nescafe",T_NESCAFE,function(d){
-  var s=ge("nescafe-avail"),tEl=ge("nescafe-ts");
-  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  var status=(d.status||"").trim().toLowerCase();
-  console.log("READ: nescafe →", JSON.stringify(d.status), "→ normalised:", status);
-  if(status==="open"){ s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else if(status==="closed"){ s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
-  else { console.warn("nescafe unknown status:", d.status); s.className="sbdg s-gray"; s.textContent="⚠ Unknown: "+d.status; }
-  if(tEl) tEl.textContent=ago(d.ts);
+  if(!d){ renderStatusCard("nescafe","Not Updated",null,T_NESCAFE); return; }
+  var st=(d.status||"").trim().toLowerCase();
+  if(st==="open") renderStatusCard("nescafe","✅ Open",d.ts,T_NESCAFE);
+  else if(st==="closed") renderStatusCard("nescafe","🔒 Closed",d.ts,T_NESCAFE);
+  else renderStatusCard("nescafe",d.status,d.ts,T_NESCAFE);
 });
-
 // GYM
 listenPlace("gym",T_GYM,function(d){
-  var s=ge("gym-avail"),tEl=ge("gym-ts");
-  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  var status=(d.status||"").trim().toLowerCase();
-  console.log("READ: gym →", JSON.stringify(d.status), "→ normalised:", status);
-  if(status==="open"){ s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else if(status==="open · crowded"||status==="open crowded"||status==="crowded"){ s.className="sbdg s-amber"; s.textContent="⚠️ Open · Crowded"; }
-  else if(status==="closed"){ s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
-  else { console.warn("gym unknown status:", d.status); s.className="sbdg s-gray"; s.textContent="⚠ Unknown: "+d.status; }
-  if(tEl) tEl.textContent=ago(d.ts);
+  if(!d){ renderStatusCard("gym","Not Updated",null,T_GYM); return; }
+  var st=(d.status||"").trim().toLowerCase();
+  if(st==="open") renderStatusCard("gym","✅ Open",d.ts,T_GYM);
+  else if(st.includes("crowded")) renderStatusCard("gym","⚠️ Crowded",d.ts,T_GYM);
+  else if(st==="closed") renderStatusCard("gym","🔒 Closed",d.ts,T_GYM);
+  else renderStatusCard("gym",d.status,d.ts,T_GYM);
 });
-
 // BADMINTON
 listenPlace("bad",T_BAD,function(d){
-  var s=ge("bad-avail"),tEl=ge("bad-ts");
-  if(!d||!s){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  var status=(d.status||"").trim().toLowerCase();
-  if(status==="open"){ s.className="sbdg s-green"; s.textContent="✅ Open"; }
-  else if(status==="open · crowded"||status==="open crowded"||status==="crowded"){ s.className="sbdg s-amber"; s.textContent="⚠️ Open · Crowded"; }
-  else if(status==="closed"){ s.className="sbdg s-red"; s.textContent="🔒 Closed"; }
-  else { s.className="sbdg s-gray"; s.textContent=d.status||"Not Updated"; }
-  if(tEl) tEl.textContent=ago(d.ts);
+  if(!d){ renderStatusCard("bad","Not Updated",null,T_BAD); return; }
+  var st=(d.status||"").trim().toLowerCase();
+  if(st==="open") renderStatusCard("bad","✅ Open",d.ts,T_BAD);
+  else if(st.includes("crowded")) renderStatusCard("bad","⚠️ Crowded",d.ts,T_BAD);
+  else if(st==="closed") renderStatusCard("bad","🔒 Closed",d.ts,T_BAD);
+  else renderStatusCard("bad",d.status,d.ts,T_BAD);
 });
-
-// DOCTOR ON CAMPUS
+// DOCTOR
 listenPlace("doc",T_DOC,function(d){
-  var s=ge("doc-avail"),tEl=ge("doc-ts");
-  if(!d){ s.className="sbdg s-gray"; s.textContent="Not Updated"; if(tEl) tEl.textContent=""; return; }
-  if(d.status==="On Campus"){ s.className="sbdg s-green"; s.textContent="✅ On Campus"; }
-  else { s.className="sbdg s-red"; s.textContent="❌ Not Available"; }
-  if(tEl) tEl.textContent=ago(d.ts);
+  if(!d){ renderStatusCard("doc","Not Updated",null,T_DOC); return; }
+  if(d.status==="On Campus") renderStatusCard("doc","✅ On Campus",d.ts,T_DOC);
+  else renderStatusCard("doc","❌ Not Available",d.ts,T_DOC);
 });
 
-// Suggestions
-db.ref("suggestions").on("value",function(snap){ setText("sug-count",(snap.numChildren()||0)+" suggestion(s)"); });
-
-// ═══════════════════════════════════════════════
-//  ADMIN · FACULTY HUNT
-// ═══════════════════════════════════════════════
-var FHUNT_TTL = 900000; // 15 minutes
-
-function showHuntPopup(profName){
-  // Remove any existing popup
-  var old=ge("hunt-popup"); if(old) old.remove();
-  var pop=document.createElement("div");
-  pop.id="hunt-popup";
-  pop.style.cssText="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;width:100%;max-width:520px;pointer-events:none;";
-  pop.innerHTML='<div style="margin:12px 16px;background:linear-gradient(135deg,#451a03,#78350f);border:1px solid rgba(251,191,36,0.6);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(251,191,36,0.3);animation:huntBanner 0.4s cubic-bezier(0.34,1.56,0.64,1);">'+
-    '<div style="font-size:1.6em;animation:pulse 1s infinite;">🎯</div>'+
-    '<div><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:0.92em;font-weight:800;color:#fbbf24;letter-spacing:-0.2px;">HUNT IS ON!</div>'+
-    '<div style="font-size:0.75em;color:#fde68a;margin-top:2px;">Someone\'s looking for '+esc(profName)+' — can you help spot them?</div></div>'+
-  '</div>';
-  document.body.appendChild(pop);
-  setTimeout(function(){ pop.remove(); },4000);
-}
-
-function openFacultyHuntPost(){
-  // Split into two groups for cleaner display
-  var profs=[
-    "Dr. Bidur","Dr. Megha","Dr. Irfan","Dr. Shameer","Dr. Nageshwar",
-    "Dr. Ishfaq","Dr. Muzaffar","Dr. Kasturi","Dr. Moushmi","Dr. Sushmita","Dr. Asha","Dean"
-  ];
-  var admin=[
-    "Manjunath (Boys Hostel Warden)","Girls Hostel Warden","Ganesh",
-    "Chennaiah (Legend)","Librarian","Exams Dept","Registrar","VC"
-  ];
-  var profOpts=profs.map(function(name,i){
-    return '<option value="'+FACULTY.indexOf(name)+'">👨‍🏫 '+esc(name)+'</option>';
-  }).join('');
-  var adminOpts=admin.map(function(name){
-    return '<option value="'+FACULTY.indexOf(name)+'">🏢 '+esc(name)+'</option>';
-  }).join('');
-  var h='<div class="mh"><span>🎯 Start a Faculty Hunt</span><button class="mx" onclick="closeModal()">✕</button></div>';
-  h+='<p style="color:var(--text-muted);font-size:0.8em;margin-bottom:12px;">Post a hunt — anyone online can help you find them on campus.</p>';
-  h+='<select class="msel" id="fh-prof-sel" style="margin-top:0;">'+
-    '<optgroup label="👨‍🏫 Faculty">'+profOpts+'</optgroup>'+
-    '<optgroup label="🏢 Admin & Staff">'+adminOpts+'</optgroup>'+
-  '</select>';
-  h+='<input class="mi" id="fh-note" maxlength="50" placeholder='+"'Optional: why are you looking for them? (max 50 chars)'"+'  style="margin-top:10px;">';
-  h+='<div style="font-size:0.62em;color:var(--text-faint);text-align:right;margin-top:3px;" id="fh-note-ct">0/50</div>';
-  h+='<div class="bst" style="margin-top:12px;">'+
-    '<button class="mb" style="background:linear-gradient(135deg,#b45309,#d97706);color:white;" onclick="postFacHunt()">🎯 Launch Hunt</button>'+
-    '<button class="mb x" onclick="closeModal()">Cancel</button>'+
-  '</div>';
-  ge("mbox").innerHTML=h;
-  ge("modal").classList.add("active");
-  var noteEl=ge("fh-note");
-  if(noteEl) noteEl.addEventListener("input",function(){ var ct=ge("fh-note-ct"); if(ct) ct.textContent=this.value.length+"/50"; });
-}
-
-function postFacHunt(){
-  var sel=ge("fh-prof-sel"); if(!sel) return;
-  var idx=parseInt(sel.value), name=FACULTY[idx];
-  var note=(ge("fh-note")||{}).value||""; note=note.trim();
-  db.ref("facHunts").push({
-    profIdx:idx, profName:name,
-    note:note||"", ts:Date.now(),
-    responses:{},
-    posterId:devId
-  });
-  logAct("🎯 Hunt posted: "+name);
-  closeModal();
-  // Show popup for the poster
-  showHuntPopup(name);
-}
-
-function respondToHunt(huntId, type, profName){
-  if(type==="spotted"){
-    // Show inline spotted input
-    var wrap=ge("fh-spot-"+huntId);
-    if(wrap){ wrap.style.display="block"; return; }
+// ══════════════════════════════════════════
+//  STATUS MODALS
+// ══════════════════════════════════════════
+function openStatusModal(place){
+  var cfg = {
+    mess:    {icon:"🍽️",name:"Mess",    opts:[{v:"Food Available",l:"✅ Food Available",c:"m-btn-green"},{v:"Not Available",l:"❌ Not Available",c:"m-btn-red"}],thresh:T_MESS},
+    nandini: {icon:"🥛",name:"Nandini", opts:[{v:"Open",l:"✅ Open",c:"m-btn-green"},{v:"Closed",l:"🔒 Closed",c:"m-btn-red"}],thresh:T_NANDINI},
+    nescafe: {icon:"☕",name:"Nescafé",  opts:[{v:"Open",l:"✅ Open",c:"m-btn-green"},{v:"Closed",l:"🔒 Closed",c:"m-btn-red"}],thresh:T_NESCAFE},
+    gym:     {icon:"🏋️",name:"Gym",     opts:[{v:"Open",l:"✅ Open",c:"m-btn-green"},{v:"Open · Crowded",l:"⚠️ Crowded",c:"m-btn-amber"},{v:"Closed",l:"🔒 Closed",c:"m-btn-red"}],thresh:T_GYM},
+    bad:     {icon:"🏸",name:"Badminton",opts:[{v:"Open",l:"✅ Open",c:"m-btn-green"},{v:"Open · Crowded",l:"⚠️ Crowded",c:"m-btn-amber"},{v:"Closed",l:"🔒 Closed",c:"m-btn-red"}],thresh:T_BAD},
+    doc:     {icon:"🏥",name:"Doctor",   opts:[{v:"On Campus",l:"✅ On Campus",c:"m-btn-green"},{v:"Not Available",l:"❌ Not Available",c:"m-btn-red"}],thresh:T_DOC}
+  };
+  var c = cfg[place]; if(!c) return;
+  var h = '<div class="mh"><span class="mh-title">'+c.icon+' '+c.name+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
+  h += '<div style="font-size:.78em;color:var(--muted);margin-bottom:12px;">Needs '+c.thresh+' confirmation'+(c.thresh>1?"s":"")+' to go live</div>';
+  h += '<div class="m-btn-row">';
+  c.opts.forEach(function(o){ h += '<button class="m-btn '+o.c+'" onclick="doVote(\''+place+'\',\''+o.v+'\','+c.thresh+')">'+o.l+'</button>'; });
+  h += '</div>';
+  if(isAdmin){
+    h += '<div class="m-adm-section"><div class="m-adm-label">Admin Override</div><div class="m-adm-row">';
+    c.opts.forEach(function(o){ h += '<button class="m-adm-btn" onclick="adminSet(\''+place+'\',\''+o.v+'\')">'+o.l+'</button>'; });
+    h += '<button class="m-adm-btn" onclick="resetPlace(\''+place+'\')">🔄 Reset</button></div></div>';
   }
-  submitHuntResponse(huntId, type, profName, "");
+  h += '<button class="m-btn m-btn-secondary" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+  openModal(h);
 }
 
-function submitHuntResponse(huntId, type, profName, location){
-  var labels={spotted:"👀 Spotted — marked as found!", cabin:"📍 In Cabin — marked!", inclass:"🏫 In Class — marked!", notseen:"❌ Not Seen — marked!"};
-  var payload={type:type, ts:Date.now(), devId:devId};
-  if(location) payload.location=location;
-  db.ref("facHunts/"+huntId+"/responses/"+devId).set(payload, function(){
-    // Mark hunt as resolved (don't delete — keep visible for 15 min)
-    db.ref("facHunts/"+huntId).update({resolved:true, resolvedType:type, resolvedLocation:location||""});
-    // Increment global helped-locate counter
-    db.ref("huntHelpCount").transaction(function(c){ return (c||0)+1; });
+// ══════════════════════════════════════════
+//  CLASS SIGNAL SYSTEM
+// ══════════════════════════════════════════
+function buildClassGrid(){
+  var grid = ge("class-grid"); if(!grid) return;
+  grid.innerHTML = ROOMS.map(function(room){
+    return '<div class="cs-card" id="cs-'+room+'" onclick="openClassModal(\''+room+'\')">' +
+      '<div class="cs-dot cs-dot-gray" id="csdot-'+room+'"></div>' +
+      '<div class="cs-room-name">'+room+'</div>' +
+      '<span class="cs-badge bdg-gray" id="csbdg-'+room+'">Not Set</span>' +
+      '<div class="cs-prof" id="csprof-'+room+'" style="font-size:.62em;color:var(--violet);margin-top:2px;min-height:14px;font-weight:600;"></div>' +
+      '<div class="cs-timer" id="cstmr-'+room+'"></div>' +
+      '<div class="cs-conf" id="csconf-'+room+'"></div>' +
+    '</div>';
+  }).join('');
+}
+buildClassGrid();
+
+// Clean expired class signals
+function cleanClassSignals(){
+  db.ref("classSignals").once("value",function(snap){
+    var now=Date.now();
+    snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>CS_TTL) db.ref("classSignals/"+c.key).remove(); });
   });
-  toast(labels[type]||"Response sent!");
-  var wrap=ge("fh-spot-"+huntId); if(wrap) wrap.style.display="none";
-  logAct("🎯 Hunt resolved: "+profName+" → "+type+(location?" @ "+location:""));
 }
+cleanClassSignals(); setInterval(cleanClassSignals, 60000);
 
-function sendSpottedNote(huntId, profName){
-  var inp=ge("fh-loc-"+huntId); if(!inp) return;
-  var loc=inp.value.trim();
-  submitHuntResponse(huntId, "spotted", profName, loc);
-}
+// Update remaining time labels
+setInterval(function(){
+  ROOMS.forEach(function(room){
+    var key = room.replace(/\s/g,"_");
+    var tsEl = ge("cstmr-"+room);
+    if(!tsEl||!tsEl._ts) return;
+    var rem = Math.max(0, CS_TTL - (Date.now()-tsEl._ts));
+    if(rem <= 0){ tsEl.textContent=""; return; }
+    var mins = Math.ceil(rem/60000);
+    tsEl.textContent = "⏱ "+mins+"m left";
+  });
+}, 10000);
 
-function renderFacHunts(hunts){
-  var list=ge("fhunt-list"); if(!list) return;
-  var wrap=ge("fhunt-wrap");
-  var alertBar=ge("hunt-alert-bar");
-
-  var activeHunts=hunts.filter(function(h){ return !h.resolved; });
-  var resolvedHunts=hunts.filter(function(h){ return h.resolved; });
-
-  // Glow only if there are UNresolved hunts
-  if(wrap) wrap.classList.toggle("hunt-active", activeHunts.length>0);
-
-  // Alert bar only for active (unresolved) hunts
-  if(alertBar){
-    if(activeHunts.length>0){
-      alertBar.style.display="block";
-      var names=activeHunts.map(function(h){ return h.profName.split(" ")[0]; }).join(", ");
-      alertBar.innerHTML='<div class="hunt-alert-inner">'+
-        '<div class="hunt-alert-dot"></div>'+
-        '<div class="hunt-alert-text">🎯 HUNT IS ON — '+esc(names)+' '+(activeHunts.length===1?'is being':'are being')+' looked for on campus</div>'+
-        '<div class="hunt-alert-count">'+activeHunts.length+' active</div>'+
-      '</div>';
-    } else {
-      alertBar.style.display="none";
-    }
-  }
-
-  if(!hunts.length){ list.innerHTML='<div class="fhunt-empty">No active hunts · tap "Start a Hunt" to begin</div>'; return; }
-
+// Listen to all class signals
+db.ref("classSignals").on("value",function(snap){
+  // Reset all first
+  ROOMS.forEach(function(room){
+    var card=ge("cs-"+room), dot=ge("csdot-"+room), bdg=ge("csbdg-"+room), tmr=ge("cstmr-"+room), conf=ge("csconf-"+room), prof=ge("csprof-"+room);
+    if(!card) return;
+    card.className="cs-card"; dot.className="cs-dot cs-dot-gray";
+    bdg.className="cs-badge bdg-gray"; bdg.textContent="Not Set";
+    if(tmr){ tmr.textContent=""; tmr._ts=null; }
+    if(conf) conf.textContent="";
+    if(prof) prof.textContent="";
+  });
   var now=Date.now();
-  list.innerHTML=hunts.map(function(h){
-    var rem=Math.max(0,FHUNT_TTL-(now-h.ts));
-    var mins=Math.ceil(rem/60000);
-    var resps=h.responses?Object.values(h.responses):[];
-    var spotted=resps.filter(function(r){return r.type==="spotted";});
-    var cabin=resps.filter(function(r){return r.type==="cabin";});
-    var inclass=resps.filter(function(r){return r.type==="inclass";});
-    var notseen=resps.filter(function(r){return r.type==="notseen";});
-    var latestSpot=spotted.length?spotted.sort(function(a,b){return b.ts-a.ts;})[0]:null;
-
-    var chips='';
-    if(spotted.length) chips+='<span class="fhunt-resp-chip spotted">👀 Spotted ×'+spotted.length+(latestSpot&&latestSpot.location?' · '+esc(latestSpot.location):'')+'</span>';
-    if(cabin.length) chips+='<span class="fhunt-resp-chip cabin">📍 In Cabin ×'+cabin.length+'</span>';
-    if(inclass.length) chips+='<span class="fhunt-resp-chip inclass">🏫 In Class ×'+inclass.length+'</span>';
-    if(notseen.length) chips+='<span class="fhunt-resp-chip notseen">❌ Not Seen ×'+notseen.length+'</span>';
-
-    // Resolved card — show result, no action buttons
-    if(h.resolved){
-      var rtypeLabel={spotted:"👀 Spotted",cabin:"📍 Found in Cabin",inclass:"🏫 Found in Class",notseen:"❌ Not on Campus"}[h.resolvedType]||"✅ Located";
-      var rloc=h.resolvedLocation?' · <span style="color:#34d399;">'+esc(h.resolvedLocation)+'</span>':'';
-      return '<div class="fhunt-card" style="opacity:0.75;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.04);">'+
-        '<div class="fhunt-card-top">'+
-          '<div>'+
-            '<div class="fhunt-who" style="color:#34d399;">✅ Found — '+esc(h.profName)+'</div>'+
-            (h.note?'<div class="fhunt-note">"'+esc(h.note)+'"</div>':'')+
-            '<div class="fhunt-meta">Posted '+ago(h.ts)+'</div>'+
-          '</div>'+
-          '<div class="fhunt-timer" style="color:#34d399;background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);">🗑 '+mins+'m</div>'+
-        '</div>'+
-        '<div class="fhunt-responses"><span class="fhunt-resp-chip spotted">'+rtypeLabel+rloc+'</span></div>'+
-        '<div style="font-size:0.68em;color:var(--text-faint);margin-top:6px;text-align:center;">Hunt resolved · auto-removes in '+mins+'m</div>'+
-      '</div>';
+  snap.forEach(function(c){
+    var d=c.val(); if(!d) return;
+    if(now-d.ts>CS_TTL) return;
+    var room=d.room; if(!room||ROOMS.indexOf(room)<0) return;
+    var card=ge("cs-"+room), dot=ge("csdot-"+room), bdg=ge("csbdg-"+room), tmr=ge("cstmr-"+room), conf=ge("csconf-"+room), profEl=ge("csprof-"+room);
+    if(!card) return;
+    var st=d.status, cv=d.confirmations||1;
+    var rem=Math.max(0,CS_TTL-(now-d.ts)), mins=Math.ceil(rem/60000);
+    if(st==="ongoing"){
+      card.className="cs-card cs-active-green"; dot.className="cs-dot cs-dot-green";
+      bdg.className="cs-badge bdg-green"; bdg.textContent="🟢 Class Ongoing";
+    } else if(st==="waiting"){
+      card.className="cs-card cs-active-amber"; dot.className="cs-dot cs-dot-amber";
+      bdg.className="cs-badge bdg-amber"; bdg.textContent="🟡 Waiting";
+    } else if(st==="cancelled"){
+      card.className="cs-card cs-active-red"; dot.className="cs-dot cs-dot-red";
+      bdg.className="cs-badge bdg-red"; bdg.textContent="🔴 Cancelled";
     }
-
-    // Active card — show action buttons
-    var alreadyVoted=h.responses&&h.responses[devId];
-    var actions=alreadyVoted?
-      '<div style="font-size:0.72em;color:var(--text-faint);margin-top:6px;text-align:center;">✅ You responded to this hunt</div>' :
-      '<div class="fhunt-actions">'+
-        '<button class="fhunt-act-btn fha-spotted" onclick="respondToHunt(\''+h.id+'\',\'spotted\',\''+esc(h.profName)+'\')">👀 Spotted</button>'+
-        '<button class="fhunt-act-btn fha-cabin" onclick="submitHuntResponse(\''+h.id+'\',\'cabin\',\''+esc(h.profName)+'\',\'\')">📍 In Cabin</button>'+
-        '<button class="fhunt-act-btn fha-class" onclick="submitHuntResponse(\''+h.id+'\',\'inclass\',\''+esc(h.profName)+'\',\'\')">🏫 In Class</button>'+
-        '<button class="fhunt-act-btn fha-notseen" onclick="submitHuntResponse(\''+h.id+'\',\'notseen\',\''+esc(h.profName)+'\',\'\')">❌ Not Seen</button>'+
-      '</div>'+
-      '<div class="fhunt-spotted-wrap" id="fh-spot-'+h.id+'" style="display:none;">'+
-        '<div style="font-size:0.72em;color:#34d399;font-weight:700;margin-bottom:4px;">👀 Where exactly?</div>'+
-        '<input class="fhunt-spotted-input" id="fh-loc-'+h.id+'" maxlength="60" placeholder="e.g. Library ground floor, near elevator...">'+
-        '<button class="fhunt-spotted-send" onclick="sendSpottedNote(\''+h.id+'\',\''+esc(h.profName)+'\')">Send Location</button>'+
-      '</div>';
-
-    return '<div class="fhunt-card">'+
-      '<div class="fhunt-card-top">'+
-        '<div>'+
-          '<div class="fhunt-who">🎯 Looking for '+esc(h.profName)+'</div>'+
-          (h.note?'<div class="fhunt-note">"'+esc(h.note)+'"</div>':'')+
-          '<div class="fhunt-meta">Posted '+ago(h.ts)+'</div>'+
-        '</div>'+
-        '<div class="fhunt-timer">⏱ '+mins+'m left</div>'+
-      '</div>'+
-      (chips?'<div class="fhunt-responses">'+chips+'</div>':'')+
-      actions+
-    '</div>';
-  }).join('');
-}
-
-// Helped locate counter
-db.ref("huntHelpCount").on("value",function(snap){
-  var count=snap.val()||0;
-  var bar=ge("hunt-helped-bar"); if(!bar) return;
-  if(count>0){
-    bar.style.display="block";
-    bar.innerHTML='<div style="font-size:0.72em;color:#a78bfa;font-weight:600;display:flex;align-items:center;gap:6px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.18);border-radius:8px;padding:6px 10px;">'+
-      '<span style="font-size:1.1em;">🤝</span>'+
-      '<span>Campus has helped locate <strong style="color:#c4b5fd;">'+count+'</strong> '+(count===1?'faculty / admin staff':'faculty & admin staff')+' so far</span>'+
-    '</div>';
-  } else {
-    bar.style.display="none";
-  }
-});
-
-// Live listener for faculty hunts
-function cleanFacHunts(){ db.ref("facHunts").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>FHUNT_TTL) db.ref("facHunts/"+c.key).remove(); }); }); }
-cleanFacHunts(); setInterval(cleanFacHunts,60000);
-
-var fhuntKnown={};
-db.ref("facHunts").orderByChild("ts").on("value",function(snap){
-  var hunts=[], now=Date.now();
-  snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<FHUNT_TTL) hunts.push({id:c.key,...d}); });
-  hunts.reverse();
-
-  // Detect new hunts posted by others → show popup
-  hunts.forEach(function(h){
-    if(!fhuntKnown[h.id] && h.posterId!==devId){
-      showHuntPopup(h.profName);
+    if(tmr){ tmr.textContent="⏱ "+mins+"m"; tmr._ts=d.ts; }
+    if(conf) conf.textContent=cv>=CS_THRESH?"✅ "+cv+" confirmed":"🗳 "+cv+"/"+CS_THRESH;
+    // Show prof if set and not the "not sure" placeholder
+    if(profEl){
+      var profName = d.prof || "";
+      profEl.textContent = (profName && profName !== "— Not sure / Any") ? "👤 "+profName : "";
     }
-    fhuntKnown[h.id]=true;
   });
-
-  renderFacHunts(hunts);
 });
 
-// Keep auto-reset for 15 min stale data (already handled by cleanFacHunts)
-// Old initFacultyListeners no longer needed — replaced by hunt system
+function openClassModal(room){
+  db.ref("classSignals").orderByChild("room").equalTo(room).once("value",function(snap){
+    var existing=null, existingKey=null, now=Date.now();
+    snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<CS_TTL){ existing=d; existingKey=c.key; } });
 
-// ═══════════════════════════════════════════════
-//  MODAL
-// ═══════════════════════════════════════════════
-function adminRow(place, options){
-  if(!isAdmin) return '';
-  var btns = options.map(function(o){
-    return '<button class="adm-btn" onclick="adminSet(\''+place+'\',\''+o.v+'\')">'+o.l+'</button>';
-  }).join('');
-  return '<div class="adm-sec"><div class="adm-lbl">🔐 Admin Override</div><div class="adm-row">'+btns+'</div></div>';
+    var currentProf = existing ? (existing.prof||"") : "";
+    var profOpts = FACULTY.map(function(f){
+      return '<option value="'+esc(f)+'"'+(f===currentProf?' selected':'')+'>'+esc(f)+'</option>';
+    }).join('');
+
+    var h='<div class="mh"><span class="mh-title">🏫 '+room+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
+    // Show current status if exists
+    if(existing){
+      var stLabel={"ongoing":"🟢 Class Ongoing","waiting":"🟡 Students Waiting","cancelled":"🔴 Cancelled"}[existing.status]||existing.status;
+      var cv=existing.confirmations||1;
+      var profDisplay=(existing.prof&&existing.prof!=="— Not sure / Any")?" · "+existing.prof:"";
+      h+='<div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;font-size:.8em;color:var(--muted);">Current: <strong style="color:var(--text);">'+stLabel+profDisplay+'</strong> · '+cv+'/'+CS_THRESH+' confirmed</div>';
+    }
+    h+='<div class="m-label">Who\'s the professor? (optional)</div>';
+    h+='<select class="m-select" id="cs-prof-sel" style="margin-top:0;">'+profOpts+'</select>';
+    h+='<div class="m-label" style="margin-top:14px;">What\'s the class status?</div>';
+    h+='<div class="m-btn-row">';
+    h+='<button class="m-btn m-btn-green" onclick="setClassSignal(\''+room+'\',\'ongoing\')">🟢 Class Ongoing</button>';
+    h+='<button class="m-btn m-btn-amber" onclick="setClassSignal(\''+room+'\',\'waiting\')">🟡 Students Waiting</button>';
+    h+='<button class="m-btn m-btn-red" onclick="setClassSignal(\''+room+'\',\'cancelled\')">🔴 Cancelled / Free</button>';
+    h+='</div>';
+    if(isAdmin && existingKey){
+      h+='<div class="m-adm-section"><div class="m-adm-label">Admin</div><button class="m-adm-btn" onclick="clearClassSignal(\''+existingKey+'\')">🗑 Clear Signal</button></div>';
+    }
+    h+='<button class="m-btn m-btn-secondary" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+    openModal(h);
+  });
 }
 
-function openModal(place){
-  var h='<div class="mh"><span>';
+function setClassSignal(room, status){
+  // Grab selected prof from the dropdown in the modal
+  var profSel = ge("cs-prof-sel");
+  var profName = profSel ? profSel.value : "";
 
-  if(place==='mess'){
-    h+='🍽️ Mess</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'mess\',\'Food Available\','+T_MESS+')">✅ Food Available</button>'+
-      '<button class="mb r" onclick="doVote(\'mess\',\'Not Available\','+T_MESS+')">❌ Not Available</button>'+
-    '</div>'+
-    adminRow('mess',[{v:'Food Available',l:'✅ Food Available'},{v:'Not Available',l:'❌ Not Available'}])+
-    (isAdmin?'<button class="adm-btn" style="width:100%;margin-top:8px;" onclick="resetPlace(\'mess\')">🔄 Reset</button>':'')+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
+  // Per-slot key: allow re-reporting each class period (not just daily)
+  // Key = room + date + approx 45min slot index
+  var slotIdx = Math.floor(Date.now() / CS_TTL);
+  var devKey = "cs_" + room + "_" + slotIdx + "_" + devId;
 
-  } else if(place==='nandini'){
-    h+='🥛 Nandini</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'nandini\',\'Open\','+T_NANDINI+')">✅ Open</button>'+
-      '<button class="mb r" onclick="doVote(\'nandini\',\'Closed\','+T_NANDINI+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('nandini',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
-    (isAdmin?'<button class="adm-btn" style="width:100%;margin-top:8px;" onclick="resetPlace(\'nandini\')">🔄 Reset</button>':'')+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='nescafe'){
-    h+='☕ Nescafé</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'nescafe\',\'Open\','+T_NESCAFE+')">✅ Open</button>'+
-      '<button class="mb r" onclick="doVote(\'nescafe\',\'Closed\','+T_NESCAFE+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('nescafe',[{v:'Open',l:'✅ Open'},{v:'Closed',l:'🔒 Closed'}])+
-    (isAdmin?'<button class="adm-btn" style="width:100%;margin-top:8px;" onclick="resetPlace(\'nescafe\')">🔄 Reset</button>':'')+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='gym'){
-    h+='🏋️ Gym</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'gym\',\'Open\','+T_GYM+')">✅ Open</button>'+
-      '<button class="mb a" onclick="doVote(\'gym\',\'Open · Crowded\','+T_GYM+')">⚠️ Open · Crowded</button>'+
-      '<button class="mb r" onclick="doVote(\'gym\',\'Closed\','+T_GYM+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('gym',[{v:'Open',l:'✅ Open'},{v:'Open · Crowded',l:'⚠️ Crowded'},{v:'Closed',l:'🔒 Closed'}])+
-    (isAdmin?'<button class="adm-btn" style="width:100%;margin-top:8px;" onclick="resetPlace(\'gym\')">🔄 Reset</button>':'')+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='bad'){
-    h+='🏸 Badminton</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'bad\',\'Open\','+T_BAD+')">✅ Open — Courts Available</button>'+
-      '<button class="mb a" onclick="doVote(\'bad\',\'Open · Crowded\','+T_BAD+')">⚠️ Open · Crowded</button>'+
-      '<button class="mb r" onclick="doVote(\'bad\',\'Closed\','+T_BAD+')">🔒 Closed</button>'+
-    '</div>'+
-    adminRow('bad',[{v:'Open',l:'✅ Open'},{v:'Open · Crowded',l:'⚠️ Crowded'},{v:'Closed',l:'🔒 Closed'}])+
-    (isAdmin?'<button class="adm-btn" style="width:100%;margin-top:8px;" onclick="resetPlace(\'bad\')">🔄 Reset</button>':'')+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='doc'){
-    h+='🏥 Doctor on Campus</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<p style="color:#888;font-size:0.8em;margin-bottom:10px;">Is the doctor on campus? (needs '+T_DOC+')</p>';
-    h+='<div class="bst">'+
-      '<button class="mb g" onclick="doVote(\'doc\',\'On Campus\','+T_DOC+')">✅ Yes — Doctor on Campus</button>'+
-      '<button class="mb r" onclick="doVote(\'doc\',\'Not Available\','+T_DOC+')">❌ No — Not Available</button>'+
-    '</div>'+
-    adminRow('doc',[{v:'On Campus',l:'✅ On Campus'},{v:'Not Available',l:'❌ Not Available'}])+
-    '<button class="mb x" style="margin-top:14px;" onclick="closeModal()">Close</button>';
-
-  } else if(place==='sug'){
-    h+='💡 Suggestions</span><button class="mx" onclick="closeModal()">✕</button></div>';
-    h+='<textarea class="mi" id="sug-in" rows="4" placeholder="Share an idea or bug report..."></textarea>';
-    h+='<div class="bst"><button class="mb g" onclick="doSug()">Submit</button></div>';
-    h+='<hr style="border:none;border-top:1px solid #2a2a3e;margin:14px 0;">';
-    h+='<div id="sug-feed" style="max-height:200px;overflow-y:auto;"></div>';
-    h+='<button class="mb x" style="margin-top:10px;" onclick="closeModal()">Close</button>';
-    setTimeout(function(){
-      db.ref("suggestions").orderByChild("ts").limitToLast(10).once("value",function(snap){
-        var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
-        var e=ge("sug-feed"); if(!e) return;
-        e.innerHTML=a.length?a.map(function(s){ return '<div style="background:rgba(255,255,255,0.03);border:1px solid #2a2a3e;border-radius:9px;padding:9px;margin-bottom:7px;font-size:0.8em;color:#94a3b8;">'+esc(s.text||'')+'<div style="font-size:0.7em;color:#444;margin-top:3px;">'+ago(s.ts)+'</div></div>'; }).join('') : '<p style="color:#444;text-align:center;padding:10px;">No suggestions yet</p>';
-      });
-    },100);
+  if(localStorage.getItem(devKey)){
+    toast("You already reported " + room + " for this period!");
+    closeModal(); return;
   }
 
-  ge("mbox").innerHTML=h;
-  ge("modal").classList.add("active");
+  db.ref("classSignals").orderByChild("room").equalTo(room).once("value",function(snap){
+    var existing=null, existingKey=null, now=Date.now();
+    snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<CS_TTL){ existing=d; existingKey=c.key; } });
+
+    if(existing && existing.status===status){
+      // Confirm existing — update prof if new info provided
+      var cv=(existing.confirmations||1)+1;
+      var update = {confirmations:cv, ts:Date.now()};
+      if(profName && profName!=="— Not sure / Any") update.prof=profName;
+      db.ref("classSignals/"+existingKey).update(update);
+      localStorage.setItem(devKey, "1");
+      toast("✅ Confirmed! "+cv+"/"+CS_THRESH+" agree."+(cv>=CS_THRESH?" Now live!":""));
+    } else {
+      // New signal or different status — overwrite
+      if(existingKey) db.ref("classSignals/"+existingKey).remove();
+      db.ref("classSignals").push({
+        room: room, status: status,
+        prof: profName || "— Not sure / Any",
+        ts: Date.now(), confirmations: 1, posterId: devId
+      });
+      localStorage.setItem(devKey, "1");
+      toast("📡 Signal posted! 1 more confirmation needed.");
+    }
+    closeModal();
+  });
 }
 
-function closeModal(){ ge("modal").classList.remove("active"); }
-function bgClose(e){ if(e.target===ge("modal")) closeModal(); }
-
-// ═══════════════════════════════════════════════
-//  SUGGESTIONS
-// ═══════════════════════════════════════════════
-function doSug(){
-  var t=(ge("sug-in")||{}).value||""; t=t.trim();
-  if(!t) return alert("Please enter something");
-  db.ref("suggestions").push({text:t,ts:Date.now()});
-  logAct("💡 Suggestion submitted");
-  toast("Thanks!"); closeModal();
-}
-
-// ═══════════════════════════════════════════════
-//  ANNOUNCEMENTS
-// ═══════════════════════════════════════════════
-function openAnnPost(){
+function clearClassSignal(key){
   if(!checkAdmin()) return;
-  var h='<div class="mh"><span>📢 Post Announcement</span><button class="mx" onclick="closeModal()">✕</button></div>';
-  h+='<textarea class="mi" id="ann-in" rows="4" placeholder="Announcement text..."></textarea>';
-  h+='<select class="msel" id="ann-tag"><option value="general">General</option><option value="mess">🍛 Mess</option><option value="event">🎉 Event</option><option value="academic">📚 Academic</option></select>';
-  h+='<div class="bst"><button class="mb g" onclick="postAnn()">Post Announcement</button><button class="mb x" onclick="closeModal()">Cancel</button></div>';
-  ge("mbox").innerHTML=h; ge("modal").classList.add("active");
+  db.ref("classSignals/"+key).remove();
+  toast("Cleared"); closeModal();
+}
+
+// ══════════════════════════════════════════
+//  LOST & FOUND
+// ══════════════════════════════════════════
+var LF_CATS = ["📱 Phone","💻 Laptop","🎒 Bag/Backpack","🔑 Keys","💳 Card/ID","📔 Book/Notes","🎧 Earphones/Headphones","🧢 Clothing/Cap","💡 Charger/Cable","📌 Stationery","Other"];
+var LF_LOCS = ["LH Block","Library","Mess","Hostel corridor","Gym","Nescafé area","Campus lawn","Badminton court","Lab","Reception"];
+
+function openLFModal(type){
+  var isLost = type==="lost";
+  var h='<div class="mh"><span class="mh-title">'+(isLost?"📢 Report Lost Item":"📦 Found Something")+'</span><button class="mx" onclick="closeModal()">✕</button></div>';
+  h+='<div class="m-label">Item Category</div>';
+  h+='<select class="m-select" id="lf-cat"><option value="">Select category...</option>'+LF_CATS.map(function(c){ return '<option>'+c+'</option>'; }).join('')+'</select>';
+  h+='<div class="m-label">Brief Description</div>';
+  h+='<textarea class="m-input" id="lf-desc" rows="2" maxlength="120" placeholder="e.g. Black iPhone 13 with cracked screen..."></textarea>';
+  h+='<div class="m-label">Location '+(isLost?"Last Seen":"Found At")+'</div>';
+  h+='<select class="m-select" id="lf-loc"><option value="">Select location...</option>'+LF_LOCS.map(function(l){ return '<option>'+l+'</option>'; }).join('')+'</select>';
+  if(!isLost){
+    h+='<div class="m-label">Where to collect it?</div>';
+    h+='<input class="m-input" id="lf-contact" maxlength="80" placeholder="e.g. Hostel Room 204 / Hand it to reception...">';
+  }
+  h+='<div class="m-btn-row" style="margin-top:16px;">';
+  h+='<button class="m-btn '+(isLost?"m-btn-red":"m-btn-green")+'" onclick="submitLF(\''+type+'\')">Submit</button>';
+  h+='<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button>';
+  h+='</div>';
+  openModal(h);
+}
+
+function submitLF(type){
+  var cat=(ge("lf-cat")||{}).value||"";
+  var desc=((ge("lf-desc")||{}).value||"").trim();
+  var loc=(ge("lf-loc")||{}).value||"";
+  var contact=((ge("lf-contact")||{}).value||"").trim();
+  if(!desc) return toast("Please describe the item");
+  if(!loc) return toast("Please select a location");
+  db.ref("lostFound").push({type:type, cat:cat, desc:desc, loc:loc, contact:contact||"", ts:Date.now()});
+  toast(type==="lost"?"📢 Report posted! Hope you find it.":"📦 Thanks for helping!");
+  closeModal();
+}
+
+function resolveLF(key){
+  if(!confirm("Mark as resolved / found?")) return;
+  db.ref("lostFound/"+key).remove();
+  toast("✅ Removed from board");
+}
+
+function cleanLF(){
+  db.ref("lostFound").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)>LF_TTL) db.ref("lostFound/"+c.key).remove(); }); });
+}
+cleanLF(); setInterval(cleanLF, 300000);
+
+db.ref("lostFound").orderByChild("ts").on("value",function(snap){
+  var items=[], now=Date.now();
+  snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<LF_TTL) items.push({id:c.key,...d}); });
+  items.reverse();
+  var el=ge("lf-list"); if(!el) return;
+  if(!items.length){ el.innerHTML='<div class="lf-empty">📭 No active lost & found items</div>'; return; }
+  el.innerHTML=items.map(function(it){
+    var icon=it.cat?it.cat.split(" ")[0]:"📦";
+    var ago_txt=ago(it.ts);
+    var contact_line=it.contact?'<div style="font-size:.7em;color:var(--green);margin-top:2px;">📍 '+esc(it.contact)+'</div>':'';
+    return '<div class="lf-item">'+
+      '<div class="lf-item-icon">'+icon+'</div>'+
+      '<div class="lf-item-body">'+
+        '<div class="lf-item-desc">'+esc(it.desc)+'</div>'+
+        '<div class="lf-item-loc">📍 '+esc(it.loc||"Unknown location")+'</div>'+
+        contact_line+
+        '<div class="lf-item-meta"><span class="lf-type-'+(it.type==="lost"?"lost":"found")+'">'+(it.type==="lost"?"🔴 LOST":"🟢 FOUND")+'</span><span>'+ago_txt+'</span>'+
+          '<button class="lf-resolve-btn" onclick="resolveLF(\''+it.id+'\')">✓ Resolved</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+});
+
+// ══════════════════════════════════════════
+//  ANNOUNCEMENTS
+// ══════════════════════════════════════════
+function openAnnModal(){
+  if(!checkAdmin()) return;
+  var h='<div class="mh"><span class="mh-title">📢 Post Announcement</span><button class="mx" onclick="closeModal()">✕</button></div>';
+  h+='<textarea class="m-input" id="ann-in" rows="4" placeholder="Announcement text..."></textarea>';
+  h+='<select class="m-select" id="ann-tag" style="margin-top:10px;"><option value="general">General</option><option value="mess">🍛 Mess</option><option value="event">🎉 Event</option><option value="academic">📚 Academic</option></select>';
+  h+='<div class="m-btn-row"><button class="m-btn m-btn-green" onclick="postAnn()">Post</button><button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button></div>';
+  openModal(h);
 }
 function postAnn(){
-  var t=(ge("ann-in")||{}).value||""; t=t.trim();
+  var t=((ge("ann-in")||{}).value||"").trim(); if(!t) return alert("Enter text");
   var tag=(ge("ann-tag")||{}).value||"general";
-  if(!t) return alert("Please enter text");
   db.ref("announcements").push({text:t,tag:tag,ts:Date.now()});
-  logAct("📢 Announcement posted");
   toast("📢 Posted!"); closeModal();
 }
 function delAnn(id){ if(!checkAdmin()) return; if(!confirm("Delete?")) return; db.ref("announcements/"+id).remove(); toast("Deleted"); }
@@ -2074,487 +1412,98 @@ function cleanAnn(){ db.ref("announcements").once("value",function(snap){ var no
 cleanAnn(); setInterval(cleanAnn,300000);
 
 db.ref("announcements").orderByChild("ts").on("value",function(snap){
-  var posts=[],now=Date.now();
+  var posts=[], now=Date.now();
   snap.forEach(function(c){ var d=c.val(); if(d&&(now-d.ts)<ANN_EXP) posts.push({id:c.key,...d}); });
   posts.reverse();
-  var con=ge("ann-list");
-  if(!posts.length){ con.innerHTML='<div class="ann-empty">📭 No announcements yet</div>'; return; }
-  con.innerHTML='<div class="ann-list-inner">'+posts.map(function(p){
+  var el=ge("ann-list");
+  if(!posts.length){ el.innerHTML='<div class="ann-empty">📭 No announcements yet</div>'; return; }
+  el.innerHTML='<div class="ann-list">'+posts.map(function(p){
     var exp=Math.ceil((ANN_EXP-(now-p.ts))/60000);
     var expTxt=exp>60?Math.ceil(exp/60)+"hr left":exp+"m left";
-    var cardClass="ann-card tag-"+(p.tag||"general")+"-card";
-    return '<div class="'+cardClass+'">'+
-      '<div class="ann-txt">'+esc(p.text)+'</div>'+
+    return '<div class="ann-item tag-'+(p.tag||"general")+'">'+
+      '<div class="ann-text">'+esc(p.text)+'</div>'+
       '<div class="ann-meta">'+
         '<span class="ann-tag tag-'+(p.tag||"general")+'">'+(p.tag||"general")+'</span>'+
-        '<span class="ann-ts">'+ago(p.ts)+'</span>'+
-        '<span class="ann-exp">⏱ '+expTxt+'</span>'+
-        (isAdmin?'<button class="ann-del" onclick="delAnn(\''+p.id+'\')">🗑</button>':'')+
+        '<span class="ann-time">'+ago(p.ts)+' · ⏱ '+expTxt+'</span>'+
+        (isAdmin?'<button class="ann-del-btn" onclick="delAnn(\''+p.id+'\')">🗑</button>':'')+
       '</div>'+
     '</div>';
   }).join('')+'</div>';
 });
 
-// ═══════════════════════════════════════════════
-//  IMMEDIATE UPDATES + DOWNVOTES
-// ═══════════════════════════════════════════════
-db.ref("immediateUpdates").orderByChild("ts").limitToLast(10).on("value",function(snap){
-  var sec=ge("imm-wrap"),con=ge("imm-list"),posts=[];
-  snap.forEach(function(c){ posts.push({id:c.key,...c.val()}); });
-  posts.reverse();
-  if(!posts.length){ sec.style.display="none"; return; }
-  sec.style.display="block";
-  con.innerHTML=posts.map(function(p){
-    var dv=p.downvotes||0,dvd=!!localStorage.getItem("idv_"+p.id);
-    return '<div class="imm-card">'+esc(p.text)+
-      '<div class="imm-meta">🔴 Crowd verified · '+ago(p.ts)+
-      ' <span style="color:#92400e;">'+dv+'/5 downvotes</span>'+
-      '<button class="dv-btn" onclick="'+(dvd?'toast(\'Already downvoted\')':'dvImm(\''+p.id+'\')')+'" '+(dvd?'style="opacity:0.4;"':'')+'>👎</button>'+
-      (isAdmin?'<button class="ann-del" onclick="admDel(\''+p.id+'\')">🗑</button>':'')+
-      '</div></div>';
-  }).join('');
-});
-
-function dvImm(id){
-  var k="idv_"+id; if(localStorage.getItem(k)) return toast("Already downvoted");
-  localStorage.setItem(k,"1");
-  db.ref("immediateUpdates/"+id).transaction(function(d){ if(!d) return d; d.downvotes=(d.downvotes||0)+1; return d; },function(err,ok,snap){
-    if(!snap) return; var d=snap.val();
-    if(d&&d.downvotes>=IMM_DV){ db.ref("immediateUpdates/"+id).remove(); logAct("🗑️ Update removed by community"); toast("Post removed by community"); }
-    else toast("Downvoted ("+(d?d.downvotes:1)+"/5)");
-  });
-}
-function admDel(id){ if(!checkAdmin()) return; db.ref("immediateUpdates/"+id).remove(); toast("Deleted"); }
-
-// ═══════════════════════════════════════════════
-//  HEARTBEAT / CAMPUS CHAT
-// ═══════════════════════════════════════════════
-
-// Track total messages sent today for "missed" counter
-var HB_TODAY_KEY = "hb_today_"+new Date().toDateString();
-var hbTodayCount = parseInt(localStorage.getItem(HB_TODAY_KEY)||"0");
-
-function updateMissedBar(){
-  var bar=ge("hb-missed-bar"); if(!bar) return;
-  if(hbTodayCount>0){
-    bar.style.display="block";
-    bar.textContent="💬 "+hbTodayCount+" text"+(hbTodayCount!==1?"s":"")+' sent today — be on the site more often to catch some of the chats!';
-  } else {
-    bar.style.display="none";
-  }
-}
-function updateCC(){ var v=ge("hb-txt").value,c=ge("chct"); c.textContent=v.length+" / 80"; c.className="chct"+(v.length>70?" warn":""); }
-function postHB(){
-  var t=ge("hb-txt").value.trim();
-  if(!t) return alert("Write something"); if(t.length>80) return alert("Max 80 chars");
-  db.ref("heartbeat").push({text:t,ts:Date.now(),upvotes:0,graduated:false});
-  // Track today count globally
-  db.ref("hbDailyCount/"+new Date().toDateString()).transaction(function(c){ return (c||0)+1; });
-  logAct("💬 Chat: \""+t.slice(0,28)+(t.length>28?"…":"")+"\"");
-  ge("hb-txt").value=""; ge("chct").textContent="0 / 80";
-}
-
-// Load today's total chat count
-db.ref("hbDailyCount/"+new Date().toDateString()).on("value",function(snap){
-  hbTodayCount=snap.val()||0;
-  updateMissedBar();
-});
-function uvHB(id){
-  var k="hbv_"+id; if(localStorage.getItem(k)) return toast("Already upvoted");
-  localStorage.setItem(k,"1");
-  db.ref("heartbeat/"+id).transaction(function(d){ if(!d) return d; d.upvotes=(d.upvotes||0)+1; return d; },function(err,ok,snap){
-    if(!snap) return; var d=snap.val();
-    if(d&&d.upvotes>=HB_VOTES&&!d.graduated){
-      db.ref("immediateUpdates").push({text:d.text,ts:Date.now()});
-      db.ref("heartbeat/"+id).update({graduated:true});
-      logAct("🔴 Heartbeat graduated!");
-      setTimeout(function(){ db.ref("heartbeat/"+id).remove(); },2500);
-    }
-  });
-}
-function cleanHB(){ db.ref("heartbeat").once("value",function(snap){ var now=Date.now(); snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated&&(now-d.ts)>HB_TTL) db.ref("heartbeat/"+c.key).remove(); }); }); }
-cleanHB(); setInterval(cleanHB,5000);
-
-// Avatar emoji pool
-var HB_AVATARS=["🦊","🐼","🦋","🐸","🦁","🐯","🦄","🐧","🦅","🐙","🦊","🐻","🦉","🐺","🦀"];
-function getAvatar(id){ var n=0; for(var i=0;i<id.length;i++) n+=id.charCodeAt(i); return HB_AVATARS[n%HB_AVATARS.length]; }
-
-var hbPostCount=0;
-db.ref("heartbeat").on("value",function(snap){
-  var feed=ge("hb-feed"),now=Date.now(),posts=[];
-  snap.forEach(function(c){ var d=c.val(); if(d&&!d.graduated) posts.push({id:c.key,...d}); });
-  posts.sort(function(a,b){ return a.ts-b.ts; }); // oldest first = Reddit style
-  hbPostCount=posts.length;
-  // Update active count
-  var atxt=ge("hb-active-txt");
-  if(atxt){
-    atxt.textContent=hbPostCount>0?hbPostCount+" message"+(hbPostCount!==1?"s":"")+' live right now':"campus chat is live — say something";
-  }
-  if(!posts.length){ feed.innerHTML='<div class="hb-empty">No messages yet · be the first to chat</div>'; return; }
-  feed.innerHTML=posts.map(function(p){
-    var rem=Math.max(0,HB_TTL-(now-p.ts)),pct=(rem/HB_TTL)*100,secs=Math.ceil(rem/1000);
-    var avatar=getAvatar(p.id);
-    return '<div class="hb-bubble">'+
-      '<div class="hb-avatar">'+avatar+'</div>'+
-      '<div class="hb-bubble-body">'+
-        '<div class="hb-bubble-text">'+esc(p.text)+'</div>'+
-        '<div class="hb-bubble-meta"><span>anon</span><span>·</span><span>fades in '+secs+'s</span></div>'+
-        '<div class="hb-fade-bar"><div class="hb-fade-fill" style="width:'+pct+'%"></div></div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
-  // Scroll to bottom
-  feed.scrollTop=feed.scrollHeight;
-});
-
-// ═══════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════
-initNotif();
-
-// ═══════════════════════════════════════════════
-//  LAST UPDATED TIME
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════
+//  LAST UPDATED + NIGHT MODE
+// ══════════════════════════════════════════
 function updateLastUpdated(){
-  var now=new Date();
-  var h=now.getHours().toString().padStart(2,'0');
-  var m=now.getMinutes().toString().padStart(2,'0');
-  var day=now.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
-  setText("last-updated-time", day+" · "+h+":"+m);
+  var n=new Date();
+  var h=n.getHours().toString().padStart(2,"0"), m=n.getMinutes().toString().padStart(2,"0");
+  setText("last-upd", h+":"+m);
 }
-updateLastUpdated(); setInterval(updateLastUpdated, 60000);
+updateLastUpdated(); setInterval(updateLastUpdated,60000);
 
-// ═══════════════════════════════════════════════
-//  NIGHT MODE (10pm–6am)
-// ═══════════════════════════════════════════════
-function isNight(){
-  var h=new Date().getHours();
-  return h>=22 || h<6;
-}
 function applyNightMode(){
-  var night=isNight();
-  var banner=ge("night-banner");
-  var overlay=ge("night-overlay");
-  if(banner) banner.classList.toggle("show", night);
-  if(overlay) overlay.classList.toggle("show", night);
+  var h=new Date().getHours();
+  var night=h>=22||h<6;
+  var b=ge("night-banner"); if(b) b.classList.toggle("show",night);
 }
-applyNightMode(); setInterval(applyNightMode, 60000);
+applyNightMode(); setInterval(applyNightMode,60000);
 
-// ═══════════════════════════════════════════════
-//  AUTO FOOD NOT AVAILABLE (30min after meal ends)
-// ═══════════════════════════════════════════════
-var mealEndTimes = [
-  {h:9, m:30,  meal:"Breakfast"},
-  {h:14, m:30, meal:"Lunch"},
-  {h:18, m:30, meal:"Snacks"},
-  {h:21, m:30, meal:"Dinner"}
-];
+// Auto food not available
+var mealEndTimes=[{h:9,m:30,meal:"Breakfast"},{h:14,m:30,meal:"Lunch"},{h:18,m:30,meal:"Snacks"},{h:21,m:30,meal:"Dinner"}];
 function checkAutoFoodStatus(){
-  var now=new Date(), h=now.getHours(), m=now.getMinutes();
-  var totalMin=h*60+m;
+  var now=new Date(), h=now.getHours(), m=now.getMinutes(), total=h*60+m;
   mealEndTimes.forEach(function(me){
-    var endMin=me.h*60+me.m;
-    // Window: from meal end to meal end + 30min
-    if(totalMin>=endMin && totalMin<endMin+30){
-      // Auto-set mess to Not Available if not already set by community
+    var end=me.h*60+me.m;
+    if(total>=end && total<end+30){
       db.ref("mess").once("value",function(snap){
         var d=snap.val();
-        // Only override if current status is "Food Available" or nothing, not if already "Not Available"
-        if(!d||d.status==="Food Available"){
-          db.ref("mess").set({status:"Not Available",ts:Date.now(),autoSet:true});
-          logAct("⏰ Auto: Mess → Not Available after "+me.meal);
-        }
+        if(!d||d.status==="Food Available") db.ref("mess").set({status:"Not Available",ts:Date.now(),autoSet:true});
       });
     }
   });
 }
-checkAutoFoodStatus(); setInterval(checkAutoFoodStatus, 60000);
+checkAutoFoodStatus(); setInterval(checkAutoFoodStatus,60000);
 
-// ═══════════════════════════════════════════════
-//  SUGGEST OPEN TILE
-// ═══════════════════════════════════════════════
-function doSugOpen(){
-  var inp=ge("sug-open-in"); if(!inp) return;
-  var t=inp.value.trim();
-  if(!t) return toast("Write something first!");
-  db.ref("suggestions").push({text:t,ts:Date.now()});
-  logAct("💡 Suggestion submitted");
-  toast("Thanks for the suggestion! 💡");
-  inp.value="";
-  loadSugFeedInline();
-}
-function loadSugFeedInline(){
-  db.ref("suggestions").orderByChild("ts").limitToLast(5).once("value",function(snap){
-    var a=[]; snap.forEach(function(c){ a.push(c.val()); }); a.reverse();
-    var e=ge("sug-feed-inline"); if(!e) return;
-    e.innerHTML=a.length?a.map(function(s){
-      return '<div class="sug-inline-card">'+esc(s.text||'')+'<span style="font-size:0.75em;color:#444;margin-left:6px;">'+ago(s.ts)+'</span></div>';
-    }).join(''):'';
-  });
-}
-loadSugFeedInline(); setInterval(loadSugFeedInline,30000);
-
-// ═══════════════════════════════════════════════
-//  GREETING BANNER
-// ═══════════════════════════════════════════════
-function getGreeting(){
-  var h=new Date().getHours();
-  if(h>=6 && h<10)  return {text:"Good Morning, BASEian! ☀️", color:"linear-gradient(135deg,#f59e0b,#fbbf24)"};
-  if(h>=10 && h<11.5) return {text:"Good Morning, BASEian! ☀️", color:"linear-gradient(135deg,#f59e0b,#fbbf24)"};
-  if(h>=11.5 && h<15.5) return {text:"Good Afternoon, BASEian! 🌤️", color:"linear-gradient(135deg,#3b82f6,#60a5fa)"};
-  if(h>=15.5 && h<18.5) return {text:"Good Evening, BASEian! 🌆", color:"linear-gradient(135deg,#f97316,#fb923c)"};
-  return null;
-}
-// More precise with minutes
-function getGreetingPrecise(){
-  var now=new Date(), h=now.getHours(), m=now.getMinutes();
-  var total=h*60+m;
-  // 6:00am - 10:00am → Good Morning
-  if(total>=360 && total<600) return {text:"Good Morning, BASEian! ☀️", color:"linear-gradient(135deg,#f59e0b,#fbbf24)"};
-  // 11:30am - 3:30pm → Good Afternoon
-  if(total>=690 && total<930) return {text:"Good Afternoon, BASEian! 🌤️", color:"linear-gradient(135deg,#3b82f6,#60a5fa)"};
-  // 3:30pm - 6:30pm → Good Evening
-  if(total>=930 && total<1110) return {text:"Good Evening, BASEian! 🌆", color:"linear-gradient(135deg,#f97316,#fb923c)"};
-  return null;
-}
-function applyGreeting(){
-  var el=ge("hb-greeting"); if(!el) return;
-  var g=getGreetingPrecise();
-  if(g){
-    el.style.display="block";
-    el.style.background=g.color;
-    el.style.webkitBackgroundClip="text";
-    el.style.webkitTextFillColor="transparent";
-    el.style.backgroundClip="text";
-    el.textContent=g.text;
-  } else {
-    el.style.display="none";
-  }
-}
-applyGreeting(); setInterval(applyGreeting,60000);
-
-// Faculty hunt cleanup handled by cleanFacHunts above
-</script>
-
-<script>
-// ═══════════════════════════════════════════════
-//  AUTO TILE BORDER + BACKGROUND COLOR ENGINE
-//  (No changes needed anywhere else)
-// ═══════════════════════════════════════════════
-
+// ══════════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════════
 (function(){
-
-  function norm(t){
-    return String(t||"")
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g,"")
-      .replace(/\s+/g," ")
-      .trim();
-  }
-
-  function getColorFromText(text){
-    var t = norm(text);
-
-    if(!t || t==="not updated") return "dark";
-
-    // RED CONDITIONS
-    if(
-      t.includes("closed") ||
-      t.includes("not available") ||
-      t.includes("full") ||
-      t.includes("on leave") ||
-      t.includes("not in cabin")
-    ) return "red";
-
-    // AMBER CONDITIONS
-    if(
-      t.includes("crowded") ||
-      t.includes("awaiting")
-    ) return "amber";
-
-    // GREEN CONDITIONS
-    if(
-      t.includes("open") ||
-      t.includes("available") ||
-      t.includes("food available") ||
-      t.includes("on campus") ||
-      t.includes("in class") ||
-      t.includes("in cabin")
-    ) return "green";
-
-    return "dark";
-  }
-
-  function applyAutoColors(){
-
-    var mappings = [
-      {card:"mess-card", badge:"mess-avail"},
-      {card:"nandini-card", badge:"nandini-avail"},
-      {card:"nescafe-card", badge:"nescafe-avail"},
-      {card:"gym-card", badge:"gym-avail"},
-      {card:"bad-card", badge:"bad-avail"},
-      {card:"doc-card", badge:"doc-avail"}
-    ];
-
-    mappings.forEach(function(item){
-      var badge = document.getElementById(item.badge);
-      if(!badge) return;
-
-      var color = getColorFromText(badge.textContent);
-      if(typeof paintCard === "function"){
-        paintCard(item.card, color);
-      }
-    });
-
-  }
-
-  // Run immediately
-  applyAutoColors();
-
-  // Sync live (Firebase updates)
-  var observer = new MutationObserver(applyAutoColors);
-  observer.observe(document.body, {
-    childList:true,
-    subtree:true,
-    characterData:true
-  });
-
-})();
-</script>
-
-<script>
-(function () {
-  let deferredInstallPrompt = null;
-
-  function isStandaloneMode() {
-    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  }
-
-  function notify(msg) {
-    if (typeof toast === "function") toast(msg);
-    else alert(msg);
-  }
-
-  function ensureInstallButton() {
-    let btn = document.getElementById("install-btn");
-    if (btn) return btn;
-
-    btn = document.createElement("button");
-    btn.id = "install-btn";
-    btn.textContent = "📲 Add to Home";
-    btn.style.cssText = [
-      "display:none",
-      "position:fixed",
-      "bottom:20px",
-      "left:20px",
-      "background:linear-gradient(135deg,#10b981,#059669)",
-      "color:#fff",
-      "border:none",
-      "border-radius:30px",
-      "padding:11px 17px",
-      "font-size:0.82em",
-      "font-weight:700",
-      "cursor:pointer",
-      "box-shadow:0 4px 14px rgba(16,185,129,0.35)",
-      "z-index:999",
-      "font-family:'Plus Jakarta Sans',sans-serif"
-    ].join(";");
-
-    document.body.appendChild(btn);
-    return btn;
-  }
-
-  function showInstallBtn(show) {
-    const btn = ensureInstallButton();
-    btn.style.display = show ? "block" : "none";
-  }
-
-  async function installApp() {
-    if (isStandaloneMode()) {
-      notify("✅ App already added to home screen");
-      return;
-    }
-
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      try {
-        await deferredInstallPrompt.userChoice;
-      } catch (_) {}
-      deferredInstallPrompt = null;
-      showInstallBtn(false);
-      return;
-    }
-
-    alert(
-`To add this app to your home screen:
-
-• iPhone (Safari): Tap Share → Add to Home Screen
-• Android (Chrome): Tap menu ⋮ → Add to Home screen`
-    );
-  }
-
-  window.addEventListener("beforeinstallprompt", function (e) {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    if (!isStandaloneMode()) showInstallBtn(true);
-  });
-
-  window.addEventListener("appinstalled", function () {
-    showInstallBtn(false);
-    notify("✅ Added to home screen");
-  });
-
-  const btn = ensureInstallButton();
-  btn.addEventListener("click", installApp);
-
-  if (!isStandaloneMode()) showInstallBtn(true);
-})();
-</script>
-<!-- Campus Uno is now the big tile below the grid -->
-
-<!-- PWA install handled above -->
-
-
-<script>
-(function(){
-
-  const btn = document.getElementById("theme-toggle");
-  const body = document.body;
-
+  var btn=ge("theme-btn"), body=document.body;
   function setTheme(mode){
-    if(mode === "light"){
-      body.classList.add("light-theme");
-      btn.textContent = "☀️ Light";
-      localStorage.setItem("theme","light");
-    } else {
-      body.classList.remove("light-theme");
-      btn.textContent = "🌙 Dark";
-      localStorage.setItem("theme","dark");
-    }
-    // Repaint cards for new theme
-    if(typeof applyAutoColors === "function") setTimeout(applyAutoColors, 50);
+    if(mode==="light"){ body.classList.add("light"); btn.textContent="☀️ Light"; localStorage.setItem("theme","light"); }
+    else { body.classList.remove("light"); btn.textContent="🌙 Dark"; localStorage.setItem("theme","dark"); }
+    setTimeout(function(){
+      ROOMS.forEach(function(r){ /* repaint if needed */ });
+    }, 50);
   }
+  var saved=localStorage.getItem("theme");
+  setTheme(saved==="dark"?"dark":"light");
+  btn.addEventListener("click",function(){ setTheme(body.classList.contains("light")?"dark":"light"); });
+})();
 
-  // Default = light theme unless user explicitly chose dark
-  const saved = localStorage.getItem("theme");
-  if(saved === "dark"){
-    setTheme("dark");
-  } else {
-    setTheme("light");
+// ══════════════════════════════════════════
+//  PWA INSTALL
+// ══════════════════════════════════════════
+(function(){
+  var deferred=null;
+  function standalone(){ return window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone===true; }
+  function mkBtn(){
+    var b=document.getElementById("install-btn"); if(b) return b;
+    b=document.createElement("button"); b.id="install-btn";
+    b.textContent="📲 Add to Home";
+    b.style.cssText="display:none;position:fixed;bottom:20px;left:16px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:28px;padding:11px 17px;font-size:.82em;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,.35);z-index:999;font-family:inherit;";
+    document.body.appendChild(b); return b;
   }
-
-  btn.addEventListener("click",function(){
-    if(body.classList.contains("light-theme")){
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
+  window.addEventListener("beforeinstallprompt",function(e){
+    e.preventDefault(); deferred=e;
+    if(!standalone()) mkBtn().style.display="block";
   });
-
+  mkBtn().addEventListener("click",async function(){
+    if(standalone()){ toast("Already added!"); return; }
+    if(deferred){ deferred.prompt(); await deferred.userChoice; deferred=null; mkBtn().style.display="none"; }
+    else{ alert("To add:\n• iPhone: Share → Add to Home Screen\n• Android: Menu ⋮ → Add to Home screen"); }
+  });
 })();
 </script>
-
-
 </body>
 </html>
-
