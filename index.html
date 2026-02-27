@@ -611,6 +611,29 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
 .sug-feed-meta { font-size: .63em; color: var(--faint); margin-top: 5px; display: flex; align-items: center; justify-content: space-between; }
 .sug-del-btn { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); color: #f87171; padding: 1px 7px; border-radius: 6px; font-size: .9em; font-weight: 700; cursor: pointer; font-family: inherit; }
 .sug-empty { text-align: center; color: var(--muted); font-size: .8em; padding: 16px; border: 1px dashed var(--border); border-radius: var(--r-sm); }
+.sug-toggle-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 10px 14px;
+  cursor: pointer; font-family: inherit;
+  transition: background .2s, border-color .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sug-toggle-btn:hover { background: var(--bg-raised); border-color: var(--violet); }
+.sug-toggle-btn.open { border-color: rgba(139,92,246,.4); background: rgba(139,92,246,.06); }
+#sug-toggle-label { font-size: .78em; font-weight: 700; color: var(--muted); }
+.sug-toggle-btn.open #sug-toggle-label { color: var(--violet); }
+.sug-toggle-arrow { font-size: .75em; color: var(--faint); transition: transform .25s; }
+.sug-toggle-arrow.open { transform: rotate(180deg); }
+.sug-feed-scroll {
+  max-height: 220px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 7px;
+  padding-right: 2px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.sug-feed-scroll::-webkit-scrollbar { width: 4px; }
+.sug-feed-scroll::-webkit-scrollbar-track { background: transparent; }
+.sug-feed-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -840,10 +863,15 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
       </div>
       <div id="sug-thanks" style="display:none;text-align:center;font-size:.82em;font-weight:700;color:var(--green);padding:10px 0 2px;">✅ Sent! Thank you 🙏</div>
       <!-- Suggestions feed -->
-      <div id="sug-feed-wrap" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-        <div style="font-size:.68em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-bottom:10px;">Recent Suggestions</div>
-        <div id="sug-feed"><div class="sug-empty">No suggestions yet</div></div>
-        <div id="sug-feed-admin-note" style="display:none;font-size:.64em;color:var(--violet);margin-top:8px;text-align:right;cursor:pointer;" onclick="clearAllSuggestions()">🗑 Clear all (admin)</div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+        <button class="sug-toggle-btn" onclick="toggleSugFeed(this)" id="sug-toggle-btn">
+          <span id="sug-toggle-label">💬 View suggestions</span>
+          <span class="sug-toggle-arrow" id="sug-toggle-arrow">▼</span>
+        </button>
+        <div id="sug-feed-wrap" style="display:none;margin-top:10px;">
+          <div id="sug-feed" class="sug-feed-scroll"><div class="sug-empty">No suggestions yet</div></div>
+          <div id="sug-feed-admin-note" style="display:none;font-size:.64em;color:var(--violet);margin-top:8px;text-align:right;cursor:pointer;" onclick="clearAllSuggestions()">🗑 Clear all (admin)</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1432,6 +1460,16 @@ function clearClassSignal(key){
   });
 })();
 
+function toggleSugFeed(btn){
+  var wrap = document.getElementById("sug-feed-wrap");
+  var arrow = document.getElementById("sug-toggle-arrow");
+  var label = document.getElementById("sug-toggle-label");
+  var isOpen = wrap.style.display !== "none";
+  wrap.style.display = isOpen ? "none" : "block";
+  btn.classList.toggle("open", !isOpen);
+  arrow.classList.toggle("open", !isOpen);
+}
+
 function submitSuggestion(){
   var inp = ge("sug-text");
   var txt = (inp ? inp.value : "").trim();
@@ -1466,7 +1504,13 @@ db.ref("suggestions").orderByChild("ts").limitToLast(20).on("value",function(sna
   var el=ge("sug-feed"); if(!el) return;
   var adminNote=ge("sug-feed-admin-note");
   if(adminNote) adminNote.style.display=isAdmin&&items.length>0?"block":"none";
-  if(!items.length){ el.innerHTML='<div class="sug-empty">No suggestions yet — be the first! 💡</div>'; return; }
+  var lbl=ge("sug-toggle-label");
+  if(!items.length){
+    el.innerHTML='<div class="sug-empty">No suggestions yet — be the first! 💡</div>';
+    if(lbl) lbl.textContent="💬 View suggestions";
+    return;
+  }
+  if(lbl) lbl.textContent="💬 "+items.length+" suggestion"+(items.length!==1?"s":"")+" — tap to view";
   el.innerHTML=items.map(function(p){
     return '<div class="sug-feed-item">'+
       '<div class="sug-feed-text">'+esc(p.text)+'</div>'+
