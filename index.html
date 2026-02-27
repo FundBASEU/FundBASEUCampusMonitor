@@ -92,43 +92,7 @@ body {
 }
 .hero-sub { font-size: .72em; color: var(--muted); font-weight: 500; margin-bottom: 12px; }
 
-/* ── WEEKEND COUNTDOWN ── */
-#wknd-banner {
-  max-width: 640px;
-  margin: 14px auto 0;
-  padding: 0 18px;
-}
-.wknd-card {
-  border-radius: var(--r-lg);
-  padding: 16px 20px;
-  background: linear-gradient(135deg,#13071f,#1a0a40,#0a1a30);
-  border: 1px solid rgba(139,92,246,.4);
-  box-shadow: 0 0 40px rgba(139,92,246,.15);
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-}
-.wknd-left { display: flex; flex-direction: column; gap: 2px; }
-.wknd-label { font-size: .62em; font-weight: 800; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase; }
-.wknd-msg { font-size: 1.05em; font-weight: 800; color: #fff; letter-spacing: -.3px; }
-.wknd-sub { font-size: .72em; color: rgba(255,255,255,.45); }
-.wknd-timer {
-  display: flex; gap: 8px; flex-shrink: 0;
-}
-.wt-blk {
-  text-align: center;
-  background: rgba(139,92,246,.15);
-  border: 1px solid rgba(139,92,246,.25);
-  border-radius: 10px;
-  padding: 6px 10px;
-  min-width: 46px;
-}
-.wt-num {
-  font-family: 'DM Mono', monospace;
-  font-size: 1.2em; font-weight: 500;
-  color: #c4b5fd; display: block;
-}
-.wt-lbl { font-size: .52em; color: rgba(196,181,253,.5); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-.wknd-today { color: #34d399; font-size: 1.3em; }
+
 
 /* ── SECTION WRAPPER ── */
 .wrap { max-width: 640px; margin: 0 auto; padding: 0 18px; }
@@ -479,13 +443,8 @@ body.light .bdg-amber { background: rgba(245,158,11,.1); color: #d97706; }
 }
 
 /* ── ADMIN BAR ── */
-#admin-bar {
-  display: none; position: fixed; top: 10px; right: 10px;
-  background: rgba(239,68,68,.18); border: 1px solid rgba(239,68,68,.4);
-  color: #f87171; padding: 5px 13px; border-radius: 18px;
-  font-size: .7em; font-weight: 700; z-index: 600; cursor: pointer;
-}
-#admin-bar.show { display: block; }
+#admin-bar { display: none !important; }
+#admin-bar.show { display: flex !important; }
 
 /* ── REFRESH BTN ── */
 .ref-btn {
@@ -550,8 +509,6 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
 
 /* Mobile */
 @media(max-width:380px) {
-  .wknd-card { flex-direction: column; align-items: flex-start; }
-  .wt-num { font-size: 1em; }
 }
 
 /* ── SUGGESTIONS ── */
@@ -592,6 +549,36 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
 
 /* ── LF CSS REMOVED ── */
 
+/* ── DAILY MEAL RATINGS ── */
+.daily-ratings-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2px;
+}
+.dr-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+}
+.dr-label {
+  font-size: .82em; font-weight: 700; color: var(--text);
+  min-width: 90px;
+}
+.dr-val {
+  font-size: 1.05em; font-weight: 900;
+  font-family: 'DM Mono', monospace;
+  color: var(--text); min-width: 34px;
+}
+.dr-val.dr-good { color: var(--green); }
+.dr-val.dr-mid  { color: var(--amber); }
+.dr-val.dr-bad  { color: var(--red); }
+.dr-val.dr-na   { color: var(--faint); font-size: .8em; font-weight: 500; }
+.dr-stars { font-size: .78em; letter-spacing: 1px; flex: 1; }
+.dr-count { font-size: .65em; color: var(--faint); font-weight: 500; white-space: nowrap; }
+.dr-divider { height: 1px; background: var(--border); margin: 0 18px; }
+
 /* ── CLASS COLLAPSE TILE ── */
 .cs-collapse-tile {
   display: flex; align-items: center; justify-content: space-between;
@@ -628,7 +615,10 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
 </head>
 <body>
 <div id="toast"></div>
-<div id="admin-bar" onclick="adminLogout()">🔐 Admin · tap to exit</div>
+<div id="admin-bar" style="display:none;position:fixed;top:10px;right:10px;z-index:600;display:flex;gap:6px;align-items:center;">
+  <button onclick="sendPushToAll()" style="background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);color:#a78bfa;padding:5px 11px;border-radius:14px;font-size:.7em;font-weight:700;cursor:pointer;font-family:inherit;">📡 Notify</button>
+  <span onclick="adminLogout()" style="background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.4);color:#f87171;padding:5px 11px;border-radius:14px;font-size:.7em;font-weight:700;cursor:pointer;">🔐 Exit Admin</span>
+</div>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -650,8 +640,6 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
   <div class="stat-chip"><span class="stat-n" id="totalVis">0</span><span class="stat-l">📊 Visitors</span></div>
 </div>
 
-<!-- SEMESTER COUNTDOWN -->
-<div id="wknd-banner"></div>
 
 <!-- MAIN WRAP -->
 <div class="wrap">
@@ -727,6 +715,34 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
     </div>
   </div>
 
+  <!-- TODAY'S MEAL RATINGS -->
+  <div class="sec-head" style="margin-top:18px;">
+    <div class="sec-title">Today's Meal Ratings</div>
+    <span style="font-size:.62em;color:var(--faint);">refreshes daily</span>
+  </div>
+  <div class="daily-ratings-card" id="daily-ratings-card">
+    <div class="dr-row" id="dr-breakfast">
+      <span class="dr-label">🍳 Breakfast</span>
+      <span class="dr-val" id="dr-bf-val">—</span>
+      <span class="dr-stars" id="dr-bf-stars"></span>
+      <span class="dr-count" id="dr-bf-count"></span>
+    </div>
+    <div class="dr-divider"></div>
+    <div class="dr-row" id="dr-lunch">
+      <span class="dr-label">🍽️ Lunch</span>
+      <span class="dr-val" id="dr-l-val">—</span>
+      <span class="dr-stars" id="dr-l-stars"></span>
+      <span class="dr-count" id="dr-l-count"></span>
+    </div>
+    <div class="dr-divider"></div>
+    <div class="dr-row" id="dr-dinner">
+      <span class="dr-label">🌙 Dinner</span>
+      <span class="dr-val" id="dr-d-val">—</span>
+      <span class="dr-stars" id="dr-d-stars"></span>
+      <span class="dr-count" id="dr-d-count"></span>
+    </div>
+  </div>
+
   <!-- CAMPUS STATUS -->
   <div class="sec-head">
     <div class="sec-title">Campus Status</div>
@@ -798,7 +814,7 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
   </div>
   <div id="cs-expand-panel" style="display:none;margin-top:10px;">
     <div style="font-size:.74em;color:var(--muted);margin-bottom:12px;line-height:1.5;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);">
-      💡 Tap a lecture hall to update status. 2 confirmations make it live.
+      💡 Mark <strong>Occupied</strong> only once the prof arrives — so your friends know they can still walk in if it's just <strong>Students Waiting</strong>.
     </div>
     <div class="class-signal-grid" id="class-grid"></div>
   </div>
@@ -860,7 +876,7 @@ body.light .cu-tile { background: linear-gradient(135deg,#4f46e5,#2563eb,#0369a1
 //  CONFIG
 // ══════════════════════════════════════════
 var ILOCK = "fundbaseu2024";
-var T_MESS=2, T_GYM=2, T_NESCAFE=2, T_NANDINI=2, T_BAD=2, T_DOC=2;
+var T_MESS=2, T_GYM=1, T_NESCAFE=2, T_NANDINI=2, T_BAD=1, T_DOC=1;
 var CS_THRESH = 2, CS_TTL = 2700000; // 45 min
 var ANN_EXP = 43200000; // 12hr
 
@@ -921,118 +937,7 @@ function closeModal(){ ge("modal").classList.remove("open"); }
 function bgClose(e){ if(e.target===ge("modal")) closeModal(); }
 function openModal(html){ ge("mbox").innerHTML=html; ge("modal").classList.add("open"); }
 
-// ══════════════════════════════════════════
-//  SEMESTER COUNTDOWN
-//  Even sem: Jan 1 → May 15   (approx)
-//  Odd  sem: Aug 1 → Dec 20   (approx)
-// ══════════════════════════════════════════
-function getSemesterInfo(now){
-  var y = now.getFullYear();
-  var m = now.getMonth(); // 0-indexed
 
-  // Define semester windows (month is 0-indexed)
-  var even = { start: new Date(y, 0, 6),  end: new Date(y, 4, 15) }; // Jan 6 – May 15
-  var odd  = { start: new Date(y, 7, 1),  end: new Date(y, 11, 20) }; // Aug 1 – Dec 20
-
-  // Are we inside even sem?
-  if(now >= even.start && now <= even.end){
-    return { name:"Even Semester", sem:"even", phase:"active", end: even.end };
-  }
-  // Are we inside odd sem?
-  if(now >= odd.start && now <= odd.end){
-    return { name:"Odd Semester", sem:"odd", phase:"active", end: odd.end };
-  }
-  // Between May 15 and Aug 1 — summer break, count to odd sem start
-  if(now > even.end && now < odd.start){
-    return { name:"Odd Semester", sem:"odd", phase:"upcoming", start: odd.start };
-  }
-  // Between Dec 20 and Jan 6 next year — winter break, count to even sem start
-  var nextEven = { start: new Date(y+1, 0, 6) };
-  return { name:"Even Semester", sem:"even", phase:"upcoming", start: nextEven.start };
-}
-
-function renderCountdown(){
-  var now = new Date();
-  var el  = ge("wknd-banner");
-  var sem = getSemesterInfo(now);
-
-  var semColor = sem.sem==="even"
-    ? "linear-gradient(135deg,#0c1a40,#1a2a5e,#0a2a40)"   // blue — even
-    : "linear-gradient(135deg,#1a0c2e,#2d1450,#0e1a30)";  // violet — odd
-
-  var borderColor = sem.sem==="even"
-    ? "rgba(59,130,246,.45)"
-    : "rgba(139,92,246,.45)";
-
-  var glowColor = sem.sem==="even"
-    ? "rgba(59,130,246,.18)"
-    : "rgba(139,92,246,.18)";
-
-  var accentColor = sem.sem==="even" ? "#60a5fa" : "#a78bfa";
-
-  if(sem.phase === "active"){
-    // Counting DOWN to semester end
-    var diff = sem.end - now;
-    if(diff <= 0){
-      // Semester just ended — re-evaluate next tick
-      setTimeout(renderCountdown, 3000); return;
-    }
-    var totalDays  = Math.round((sem.end - new Date(sem.end.getFullYear(), sem.sem==="even"?0:7, sem.sem==="even"?6:1)) / 86400000);
-    var daysLeft   = Math.floor(diff / 86400000);
-    var hoursLeft  = Math.floor((diff % 86400000) / 3600000);
-    var minsLeft   = Math.floor((diff % 3600000)  / 60000);
-    var pct        = Math.max(0, Math.round(((totalDays - daysLeft) / totalDays) * 100));
-
-    // Motivational message based on how far in
-    var msgs;
-    if(daysLeft > 60)      msgs = ["Long road ahead 📚","Semester just started 🌱","Pace yourself ☕"];
-    else if(daysLeft > 30) msgs = ["Midpoint grind 💪","Halfway there 🏃","Keep going 🔥"];
-    else if(daysLeft > 14) msgs = ["Almost there ⚡","Final stretch 🏁","Push through 💥"];
-    else                   msgs = ["Last few days! 🎉","Finish strong 🔥","Nearly done!! 🎊"];
-    var msg = msgs[Math.floor(Date.now()/3600000) % msgs.length];
-
-    el.innerHTML =
-      '<div class="wknd-card" style="background:'+semColor+';border-color:'+borderColor+';box-shadow:0 0 40px '+glowColor+';">' +
-        '<div class="wknd-left">' +
-          '<div class="wknd-label" style="color:'+accentColor+';">📅 '+sem.name+' ends in</div>' +
-          '<div class="wknd-msg">'+msg+'</div>' +
-          '<div class="wknd-sub">Ends '+sem.end.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})+'</div>' +
-          '<div style="margin-top:8px;background:rgba(255,255,255,.07);border-radius:6px;overflow:hidden;height:5px;width:100%;">'+
-            '<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,'+accentColor+',#34d399);border-radius:6px;transition:width 1s ease;"></div>'+
-          '</div>'+
-          '<div style="font-size:.6em;color:rgba(255,255,255,.3);margin-top:3px;">'+pct+'% complete · '+daysLeft+' day'+(daysLeft!==1?"s":"")+' left</div>'+
-        '</div>' +
-        '<div class="wknd-timer">' +
-          '<div class="wt-blk"><span class="wt-num" style="color:'+accentColor+';">'+String(daysLeft).padStart(2,"0")+'</span><span class="wt-lbl">Days</span></div>' +
-          '<div class="wt-blk"><span class="wt-num" style="color:'+accentColor+';">'+String(hoursLeft).padStart(2,"0")+'</span><span class="wt-lbl">Hrs</span></div>' +
-          '<div class="wt-blk"><span class="wt-num" style="color:'+accentColor+';">'+String(minsLeft).padStart(2,"0")+'</span><span class="wt-lbl">Min</span></div>' +
-        '</div>' +
-      '</div>';
-
-  } else {
-    // BREAK — counting UP to next semester
-    var diff2   = sem.start - now;
-    var days2   = Math.floor(diff2 / 86400000);
-    var hours2  = Math.floor((diff2 % 86400000) / 3600000);
-    var mins2   = Math.floor((diff2 % 3600000)  / 60000);
-    var breakMsg = days2 > 30 ? "Enjoy the break! ☀️" : days2 > 7 ? "Break winding down 🌅" : "Sem starts soon 😬";
-
-    el.innerHTML =
-      '<div class="wknd-card" style="background:'+semColor+';border-color:'+borderColor+';box-shadow:0 0 40px '+glowColor+';">' +
-        '<div class="wknd-left">' +
-          '<div class="wknd-label" style="color:'+accentColor+';">🎉 '+sem.name+' starts in</div>' +
-          '<div class="wknd-msg">'+breakMsg+'</div>' +
-          '<div class="wknd-sub">Starts '+sem.start.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})+'</div>' +
-        '</div>' +
-        '<div class="wknd-timer">' +
-          '<div class="wt-blk"><span class="wt-num" style="color:'+accentColor+';">'+String(days2).padStart(2,"0")+'</span><span class="wt-lbl">Days</span></div>' +
-          '<div class="wt-blk"><span class="wt-num" style="color:'+accentColor+';">'+String(hours2).padStart(2,"0")+'</span><span class="wt-lbl">Hrs</span></div>' +
-          '<div class="wt-blk"><span class="wt-num" style="color:'+accentColor+';">'+String(mins2).padStart(2,"0")+'</span><span class="wt-lbl">Min</span></div>' +
-        '</div>' +
-      '</div>';
-  }
-}
-renderCountdown(); setInterval(renderCountdown, 30000);
 
 
 
@@ -1443,7 +1348,7 @@ function openClassModal(room){
     h+='<div class="m-label">Who\'s the professor? (optional)</div>';
     h+='<select class="m-select" id="cs-prof-sel" onchange="onProfChange(this)">'+profOpts+'</select>';
     h+='<div id="cs-visiting-wrap" style="display:none;margin-top:8px;"><input class="m-input" id="cs-visiting-name" maxlength="50" placeholder="Enter visiting faculty name..." style="margin-top:0;"></div>';
-    h+='<div class="m-label" style="margin-top:14px;">What\'s the class status?</div>';
+    h+='<div class="m-label" style="margin-top:14px;">What\'s the status right now?</div>';h+='<div style="font-size:.74em;color:var(--muted);margin-bottom:10px;line-height:1.6;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:9px 12px;">🟡 <strong style="color:var(--text);">Students Waiting</strong> = prof not here yet, door open<br>🟢 <strong style="color:var(--text);">Occupied</strong> = prof arrived, class in session<br>🆓 <strong style="color:var(--text);">Free</strong> = hall is empty / no class</div>';
     h+='<div class="m-btn-row">';
     h+='<button class="m-btn m-btn-green" onclick="setClassSignal(\''+room+'\',\'ongoing\')">🟢 Occupied</button>';
     h+='<button class="m-btn m-btn-amber" onclick="setClassSignal(\''+room+'\',\'waiting\')">🟡 Students Waiting</button>';
@@ -1615,6 +1520,136 @@ db.ref("announcements").orderByChild("ts").on("value",function(snap){
 });
 
 // ══════════════════════════════════════════
+//  DAILY MEAL RATINGS SUMMARY
+// ══════════════════════════════════════════
+var MEALS_TO_TRACK = ["Breakfast","Lunch","Dinner"];
+var DR_IDS = { Breakfast:"bf", Lunch:"l", Dinner:"d" };
+
+function getDayPrefix(){
+  var n = new Date();
+  return "rating_"+n.getFullYear()+"_"+(n.getMonth()+1)+"_"+n.getDate()+"_";
+}
+
+function starsStr(avg){
+  var n=Math.round(parseFloat(avg)), s="";
+  for(var i=0;i<5;i++) s+=(i<n)?"⭐":"☆";
+  return s;
+}
+
+function avgColor(avg){
+  var v=parseFloat(avg);
+  if(v>=4) return "dr-good";
+  if(v>=2.5) return "dr-mid";
+  return "dr-bad";
+}
+
+function loadDailyRatings(){
+  var prefix = getDayPrefix();
+  MEALS_TO_TRACK.forEach(function(meal){
+    var id = DR_IDS[meal];
+    db.ref("mealRatings/"+prefix+meal+"/votes").on("value",function(snap){
+      var total=0, sum=0;
+      snap.forEach(function(c){ var d=c.val(); if(d&&d.v>=1&&d.v<=5){ sum+=d.v; total++; } });
+      var valEl=ge("dr-"+id+"-val"), stEl=ge("dr-"+id+"-stars"), ctEl=ge("dr-"+id+"-count");
+      if(!valEl) return;
+      if(total===0){
+        valEl.textContent="—"; valEl.className="dr-val dr-na";
+        if(stEl) stEl.textContent="No votes yet";
+        if(ctEl) ctEl.textContent="";
+      } else {
+        var avg=(sum/total).toFixed(1);
+        valEl.textContent=avg; valEl.className="dr-val "+avgColor(avg);
+        if(stEl) stEl.textContent=starsStr(avg);
+        if(ctEl) ctEl.textContent=total+" vote"+(total!==1?"s":"");
+      }
+    });
+  });
+}
+loadDailyRatings();
+
+// Auto-refresh at midnight: detach old listeners and reload for new day
+(function scheduleMidnightRefresh(){
+  var now = new Date();
+  var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 5);
+  var msToMidnight = midnight - now;
+  setTimeout(function(){
+    // Detach old listeners and reload ratings for new day
+    var oldPrefix = getDayPrefix();
+    MEALS_TO_TRACK.forEach(function(meal){
+      db.ref("mealRatings/"+oldPrefix+meal+"/votes").off();
+    });
+    loadDailyRatings();
+    // Reset current meal rating UI too
+    updMealBanner();
+    scheduleMidnightRefresh();
+  }, msToMidnight);
+})();
+
+// ══════════════════════════════════════════
+//  PUSH NOTIFICATIONS
+// ══════════════════════════════════════════
+function requestPushPermission(callback){
+  if(!("Notification" in window)){ if(callback) callback(false); return; }
+  if(Notification.permission==="granted"){ if(callback) callback(true); return; }
+  if(Notification.permission==="denied"){ if(callback) callback(false); return; }
+  Notification.requestPermission().then(function(perm){
+    if(callback) callback(perm==="granted");
+  });
+}
+
+// Ask for notification permission on load (once per device)
+(function(){
+  var asked = localStorage.getItem("notif_asked");
+  if(!asked && "Notification" in window && Notification.permission==="default"){
+    setTimeout(function(){
+      // Gentle prompt via toast first
+      toast("🔔 Enable notifications to get campus updates!");
+      setTimeout(function(){
+        requestPushPermission(function(granted){
+          if(granted){
+            localStorage.setItem("notif_asked","1");
+            // Subscribe to push topic via Firebase (store token in DB)
+            if("serviceWorker" in navigator){
+              showLocalNotification(
+                "FundBASEU 🎉",
+                "You're all set! You'll get notified when the site is updated."
+              );
+            }
+          }
+        });
+      }, 2500);
+    }, 3000);
+  }
+})();
+
+function showLocalNotification(title, body){
+  if(Notification.permission!=="granted") return;
+  try { new Notification(title, { body: body, icon: "https://fundbaseu.github.io/FundBASEUCampusMonitor/icon-192.png", badge: "https://fundbaseu.github.io/FundBASEUCampusMonitor/icon-192.png" }); } catch(e){}
+}
+
+// Listen to a "pushNotifications" node in Firebase — admin writes a message, everyone sees it
+db.ref("pushNotifications").orderByChild("ts").limitToLast(1).on("value",function(snap){
+  snap.forEach(function(c){
+    var d=c.val(); if(!d||!d.msg) return;
+    var seenKey = "pn_seen_"+c.key;
+    if(localStorage.getItem(seenKey)) return;
+    localStorage.setItem(seenKey,"1");
+    // Show as banner toast and local notification
+    toast("📢 "+d.msg);
+    setTimeout(function(){ showLocalNotification("FundBASEU Update 📢", d.msg); }, 500);
+  });
+});
+
+// Admin: send push notification to all users
+function sendPushToAll(){
+  if(!checkAdmin()) return;
+  var msg = prompt("📢 Message to send to everyone:");
+  if(!msg||!msg.trim()) return;
+  db.ref("pushNotifications").push({ msg: msg.trim(), ts: Date.now() });
+  toast("📡 Notification sent!");
+}
+
+// ══════════════════════════════════════════
 //  LAST UPDATED + NIGHT MODE
 // ══════════════════════════════════════════
 function updateLastUpdated(){
@@ -1685,6 +1720,20 @@ checkAutoFoodStatus(); setInterval(checkAutoFoodStatus,60000);
     if(standalone()){ toast("Already added!"); return; }
     if(deferred){ deferred.prompt(); await deferred.userChoice; deferred=null; mkBtn().style.display="none"; }
     else{ alert("To add:\n• iPhone: Share → Add to Home Screen\n• Android: Menu ⋮ → Add to Home screen"); }
+  });
+})();
+
+// ── ONE-TIME UPDATE NOTIFICATION ──
+// Posts a notification to all users about the new update
+(function(){
+  var UPDATE_KEY = "fundbaseu_update_v3_feb27";
+  db.ref("pushNotifications/"+UPDATE_KEY).once("value", function(snap){
+    if(!snap.exists()){
+      db.ref("pushNotifications/"+UPDATE_KEY).set({
+        msg: "FundBASEU just got updated! 🎉 Meal ratings, smarter LH tracker, suggestions feed & more. Check it out!",
+        ts: Date.now()
+      });
+    }
   });
 })();
 </script>
